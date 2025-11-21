@@ -1,0 +1,29 @@
+{
+  "name": "dosm_insights_chat_stub",
+  "nodes": [
+    {
+      "type": "input",
+      "id": "in"
+    },
+    {
+      "type": "http",
+      "id": "call_api",
+      "method": "POST",
+      "url": "https://<your-host>/predict"
+    },
+    {
+      "type": "output",
+      "id": "out"
+    }
+  ],
+  "edges": [
+    {
+      "from": "in",
+      "to": "call_api"
+    },
+    {
+      "from": "call_api",
+      "to": "out"
+    }
+  ]
+}

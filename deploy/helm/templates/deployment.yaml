@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "dosm-insights.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "dosm-insights.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "dosm-insights.name" . }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "dosm-insights.name" . }}
+      annotations:
+        {{- if .Values.prometheus.scrape }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ .Values.prometheus.port }}"
+        prometheus.io/path: "{{ .Values.prometheus.path }}"
+        {{- end }}
+    spec:
+      containers:
+        - name: api
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: 8000
+          env:
+            - name: MODEL_VERSION
+              value: "{{ .Values.env.MODEL_VERSION | default .Values.image.tag }}"
+            - name: LOG_LEVEL
+              value: "{{ .Values.env.LOG_LEVEL | default "INFO" }}"
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dosm-insights.fullname" . }}-config
+                  key: API_KEY
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dosm-insights.fullname" . }}-config
+                  key: DATABASE_URL
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3

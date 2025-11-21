@@ -1,0 +1,18 @@
+.venv/
+__pycache__/
+*.pyc
+*.log
+.env
+.vectorstore/
+.DS_Store
+.git-credentials
+# Test artifacts
+.coverage
+htmlcov/
+# Jupyter
+*.ipynb_checkpoints/
+# Local data
+sample.csv
+# development docs
+development-docs/
+.idea/

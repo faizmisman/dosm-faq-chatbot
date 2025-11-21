@@ -1,0 +1,88 @@
+name: Promote Prod (Canary)
+
+on:
+  workflow_dispatch:
+    inputs:
+      canaryPercent:
+        description: "Initial canary percentage (e.g. 10)"
+        required: true
+        default: '10'
+      imageSha:
+        description: "Git SHA of image to promote"
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: AKS context
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ secrets.AKS_PROD_RG }}
+          cluster-name: ${{ secrets.AKS_PROD_NAME }}
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Deploy canary
+        run: |
+          helm upgrade --install dosm-insights ./deploy/helm \
+            --set image.repository=${{ secrets.ACR_NAME }}.azurecr.io/dosm-insights-api \
+            --set image.tag=${{ github.event.inputs.imageSha }} \
+            --set replicaGroups.canary.percent=${{ github.event.inputs.canaryPercent }} \
+            -f deploy/helm/values-prod.yaml
+
+      - name: Wait & gather metrics
+        run: |
+          sleep 60
+          kubectl get pods -o wide
+          # Placeholder for metrics query (Prometheus API).
+
+  promote:
+    runs-on: ubuntu-latest
+    needs: canary
+    if: ${{ success() }}
+    environment: prod
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: AKS context
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ secrets.AKS_PROD_RG }}
+          cluster-name: ${{ secrets.AKS_PROD_NAME }}
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Promote 100%
+        run: |
+          helm upgrade --install dosm-insights ./deploy/helm \
+            --set image.repository=${{ secrets.ACR_NAME }}.azurecr.io/dosm-insights-api \
+            --set image.tag=${{ github.event.inputs.imageSha }} \
+            --set replicaGroups.canary.percent=0 \
+            --set replicaGroups.primary.percent=100 \
+            -f deploy/helm/values-prod.yaml

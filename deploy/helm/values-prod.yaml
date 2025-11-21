@@ -1,0 +1,33 @@
+image:
+  repository: youracr.azurecr.io/dosm-insights-api
+  tag: prod
+
+replicaCount: 3
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 1
+    memory: 1Gi
+
+env:
+  LOG_LEVEL: INFO
+  # API_KEY and DATABASE_URL provided via secrets when enabled
+  MODEL_VERSION: "dosm-rag-prod"
+
+prometheus:
+  scrape: true
+  port: 8000
+  path: /metrics
+
+secrets:
+  enabled: true
+  apiKey: prod-placeholder  # Replace via external secret management
+  databaseUrl: postgresql://postgres:prodpass@postgres.prod.svc.cluster.local:5432/dosm_insights
+
+ingress:
+  enabled: true
+  className: nginx
+  host: dosm.example.com

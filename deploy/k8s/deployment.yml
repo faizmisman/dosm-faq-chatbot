@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dosm-insights-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: dosm-insights-api
+  template:
+    metadata:
+      labels:
+        app: dosm-insights-api
+    spec:
+      containers:
+        - name: api
+          image: youracr.azurecr.io/dosm-insights-api:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: MODEL_VERSION
+              value: "dosm-rag-local"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 5

@@ -1,0 +1,49 @@
+name: Deploy Dev
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-dev:
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Set image tag
+        id: image
+        run: echo "IMAGE_TAG=${{ secrets.ACR_NAME }}.azurecr.io/dosm-insights-api:${{ github.sha }}" >> $GITHUB_OUTPUT
+
+      - name: AKS context
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ secrets.AKS_DEV_RG }}
+          cluster-name: ${{ secrets.AKS_DEV_NAME }}
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Helm upgrade
+        run: |
+          helm upgrade --install dosm-insights ./deploy/helm \
+            --set image.repository=${{ secrets.ACR_NAME }}.azurecr.io/dosm-insights-api \
+            --set image.tag=${{ github.sha }} \
+            -f deploy/helm/values-dev.yaml
+
+      - name: Smoke test /health
+        run: |
+          kubectl run curl-pod --image=curlimages/curl:8.7.1 -i --rm --restart=Never -- curl -s http://dosm-insights:8000/health | jq .

@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  id-token: write
+  packages: write
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install deps
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: |
+          source .venv/bin/activate
+          pytest -q
+
+      - name: Build Docker image
+        run: |
+          docker build -t dosm-insights-api:${{ github.sha }} .
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: ACR login
+        run: |
+          az acr login -n ${{ secrets.ACR_NAME }}
+
+      - name: Tag & push image
+        env:
+          ACR_NAME: ${{ secrets.ACR_NAME }}
+        run: |
+          IMAGE_TAG=${{ env.ACR_NAME }}.azurecr.io/dosm-insights-api:${{ github.sha }}
+          docker tag dosm-insights-api:${{ github.sha }} $IMAGE_TAG
+          docker push $IMAGE_TAG
+
+      - name: Upload artifact (image tag)
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-tag
+          path: image-tag.txt
+        if: always()
+        run: echo $IMAGE_TAG > image-tag.txt
