@@ -33,15 +33,16 @@ jobs:
       - name: AKS context
         uses: azure/aks-set-context@v3
         with:
-          resource-group: ${{ secrets.AKS_PROD_RG }}
-          cluster-name: ${{ secrets.AKS_PROD_NAME }}
+          resource-group: ${{ secrets.AKS_RG }}
+          cluster-name: ${{ secrets.AKS_NAME }}
 
       - name: Install Helm
         uses: azure/setup-helm@v4
 
-      - name: Deploy canary
+      - name: Deploy canary (Prod Namespace)
         run: |
           helm upgrade --install dosm-insights ./deploy/helm \
+            --namespace dosm-prod \
             --set image.repository=${{ secrets.ACR_NAME }}.azurecr.io/dosm-insights-api \
             --set image.tag=${{ github.event.inputs.imageSha }} \
             --set replicaGroups.canary.percent=${{ github.event.inputs.canaryPercent }} \
@@ -50,7 +51,7 @@ jobs:
       - name: Wait & gather metrics
         run: |
           sleep 60
-          kubectl get pods -o wide
+          kubectl get pods -o wide --namespace=dosm-prod
           # Placeholder for metrics query (Prometheus API).
 
   promote:
@@ -72,15 +73,16 @@ jobs:
       - name: AKS context
         uses: azure/aks-set-context@v3
         with:
-          resource-group: ${{ secrets.AKS_PROD_RG }}
-          cluster-name: ${{ secrets.AKS_PROD_NAME }}
+          resource-group: ${{ secrets.AKS_RG }}
+          cluster-name: ${{ secrets.AKS_NAME }}
 
       - name: Install Helm
         uses: azure/setup-helm@v4
 
-      - name: Promote 100%
+      - name: Promote 100% (Prod Namespace)
         run: |
           helm upgrade --install dosm-insights ./deploy/helm \
+            --namespace dosm-prod \
             --set image.repository=${{ secrets.ACR_NAME }}.azurecr.io/dosm-insights-api \
             --set image.tag=${{ github.event.inputs.imageSha }} \
             --set replicaGroups.canary.percent=0 \

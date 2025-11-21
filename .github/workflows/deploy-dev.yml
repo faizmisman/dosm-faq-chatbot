@@ -31,19 +31,20 @@ jobs:
       - name: AKS context
         uses: azure/aks-set-context@v3
         with:
-          resource-group: ${{ secrets.AKS_DEV_RG }}
-          cluster-name: ${{ secrets.AKS_DEV_NAME }}
+          resource-group: ${{ secrets.AKS_RG }}
+          cluster-name: ${{ secrets.AKS_NAME }}
 
       - name: Install Helm
         uses: azure/setup-helm@v4
 
-      - name: Helm upgrade
+      - name: Helm upgrade (Dev Namespace)
         run: |
           helm upgrade --install dosm-insights ./deploy/helm \
+            --namespace dosm-dev \
             --set image.repository=${{ secrets.ACR_NAME }}.azurecr.io/dosm-insights-api \
             --set image.tag=${{ github.sha }} \
             -f deploy/helm/values-dev.yaml
 
       - name: Smoke test /health
         run: |
-          kubectl run curl-pod --image=curlimages/curl:8.7.1 -i --rm --restart=Never -- curl -s http://dosm-insights:8000/health | jq .
+          kubectl run curl-pod --image=curlimages/curl:8.7.1 -i --rm --restart=Never --namespace=dosm-dev -- curl -s http://dosm-insights:8000/health | jq .
