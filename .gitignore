@@ -13,6 +13,5 @@ htmlcov/
 *.ipynb_checkpoints/
 # Local data
 sample.csv
-# development docs
-development-docs/
+# (removed) development-docs/ now tracked for consolidated documentation
 .idea/
