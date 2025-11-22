@@ -13,5 +13,6 @@ htmlcov/
 *.ipynb_checkpoints/
 # Local data
 sample.csv
-# (removed) development-docs/ now tracked for consolidated documentation
+# Ignore development docs directory (requested removal from repo)
+development-docs/
 .idea/
