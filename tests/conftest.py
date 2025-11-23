@@ -18,11 +18,23 @@ def mock_database_operations():
         # Create mock connection and cursor
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
+        
+        # Set up cursor context manager
         mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        mock_conn.cursor.return_value.__exit__.return_value = None
+        
+        # Set up connection context manager
         mock_conn.__enter__.return_value = mock_conn
+        mock_conn.__exit__.return_value = None
+        
+        # Mock connection attributes
+        mock_conn.encoding = 'UTF8'
+        mock_cursor.connection = mock_conn
+        
         mock_connect.return_value = mock_conn
         
         # Mock cursor.fetchall() to return empty results by default
         mock_cursor.fetchall.return_value = []
+        mock_cursor.execute.return_value = None
         
         yield mock_cursor
