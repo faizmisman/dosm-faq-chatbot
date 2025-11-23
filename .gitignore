@@ -13,8 +13,8 @@ htmlcov/
 *.ipynb_checkpoints/
 # Local data
 sample.csv
-# Ignore development docs directory (requested removal from repo)
-development-docs/
+# Development docs now included in repo for CI/CD setup reference
+# development-docs/
 .idea/
 
 # Terraform local artifacts (never commit state or plans)
