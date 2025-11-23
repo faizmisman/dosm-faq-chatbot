@@ -17,6 +17,9 @@ env:
   LOG_LEVEL: INFO
   # API_KEY and DATABASE_URL will come from secrets when enabled
   MODEL_VERSION: "dosm-rag-dev"
+  CONF_THRESHOLD: "0.25"
+  RAG_TOP_K: "3"
+  EMBEDDING_MODEL_NAME: "sentence-transformers/all-MiniLM-L6-v2"
   DB:
     URL_SECRET: dev-db-url
     URL_KEY: DATABASE_URL
