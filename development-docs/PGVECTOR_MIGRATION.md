@@ -108,6 +108,32 @@ psycopg2-binary>=2.9.0
 
 ## Deployment
 
+### Resource Requirements
+
+**Important**: The embedding model (sentence-transformers/all-MiniLM-L6-v2) downloads on first pod start and requires:
+- **Memory**: 512Mi minimum (1Gi recommended)
+- **CPU**: 250m minimum (1000m limit recommended)
+- **Initial startup time**: ~26-30 seconds for model download
+
+**Kubernetes Probe Configuration**:
+```yaml
+readinessProbe:
+  initialDelaySeconds: 10
+  timeoutSeconds: 5
+  periodSeconds: 10
+  failureThreshold: 3
+
+livenessProbe:
+  initialDelaySeconds: 60  # Allow time for model download
+  timeoutSeconds: 10
+  periodSeconds: 30
+  failureThreshold: 3
+```
+
+**Helm Deployment Timeout**:
+- Use `--wait --timeout 10m` (not 5m) to accommodate initial model download
+- Subsequent deployments are faster as nodes cache the Docker image
+
 ### Local Testing
 
 1. Set DATABASE_URL to local PostgreSQL instance:
@@ -132,42 +158,97 @@ uvicorn app.main:app --reload
 
 ### Kubernetes Deployment
 
-1. Run migration on dev/prod databases:
+**Prerequisites**:
+1. PostgreSQL Flexible Server with pgvector extension enabled:
+```bash
+# Enable pgvector extension via Azure CLI
+az postgres flexible-server parameter set \
+  --resource-group dosm-faq-chatbot-data \
+  --server-name pg-dosm \
+  --name azure.extensions \
+  --value "pgvector,pg_stat_statements"
+```
+
+2. Run migration on dev/prod databases:
 ```bash
 # Dev
-az postgres flexible-server execute \
-  --name dosm-faq-chatbot-dev-postgres \
-  --admin-user adminuser \
-  --database-name dosm_dev \
-  --file-path sql/migrations/002_vector_store.sql
+PGPASSWORD='YourPassword' psql \
+  -h pg-dosm.postgres.database.azure.com \
+  -U dosm_admin \
+  -d dosm-faq-chatbot-dev-postgres \
+  -f sql/migrations/002_vector_store.sql
 
 # Prod
-az postgres flexible-server execute \
-  --name dosm-faq-chatbot-prod-postgres \
-  --admin-user adminuser \
-  --database-name dosm_prod \
-  --file-path sql/migrations/002_vector_store.sql
+PGPASSWORD='YourPassword' psql \
+  -h pg-dosm.postgres.database.azure.com \
+  -U dosm_admin \
+  -d dosm-faq-chatbot-prod-postgres \
+  -f sql/migrations/002_vector_store.sql
 ```
 
-2. Ensure DATABASE_URL is in Key Vault and available via secret:
-```yaml
-# Helm values already configured with:
-secrets:
-  enabled: true
-  # DATABASE_URL comes from external secret or Key Vault CSI
-```
-
-3. Enable ingestion Job to populate database:
-```yaml
-ragIngest:
-  enabled: true  # Run once on deploy
-```
-
-4. Deploy via GitHub Actions workflow or manual helm upgrade:
+3. Create Kubernetes secrets with URL-encoded passwords:
 ```bash
-helm upgrade --install faq-chatbot-dosm-insights ./deploy/helm \
+# IMPORTANT: Special characters in password must be URL-encoded
+# @ -> %40, : -> %3A, / -> %2F, etc.
+
+kubectl create secret generic dev-db-url -n dosm-dev \
+  --from-literal=DATABASE_URL="postgresql://dosm_admin:Password%40123@pg-dosm.postgres.database.azure.com:5432/dosm-faq-chatbot-dev-postgres?sslmode=require"
+
+kubectl create secret generic prod-db-url -n dosm-prod \
+  --from-literal=DATABASE_URL="postgresql://dosm_admin:Password%40123@pg-dosm.postgres.database.azure.com:5432/dosm-faq-chatbot-prod-postgres?sslmode=require"
+```
+
+4. Configure Helm values to reference external secrets:
+```yaml
+# values-dev.yaml
+env:
+  DB:
+    URL_SECRET: dev-db-url
+    URL_KEY: DATABASE_URL
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+```
+
+5. Deploy via GitHub Actions workflow or manual helm upgrade:
+```bash
+helm upgrade --install faq-chatbot-dev ./deploy/helm \
   -f deploy/helm/values-dev.yaml \
-  --set image.tag=$IMAGE_TAG
+  --set image.tag=$IMAGE_TAG \
+  --wait --timeout 10m  # 10 minutes to allow model download
+```
+
+### Troubleshooting Deployments
+
+**Helm Upgrade Timeout (context deadline exceeded)**:
+- **Cause**: Helm `--wait` flag waits for all pods to be Ready. First pod start downloads embedding model (~100MB) which takes 26-30 seconds, potentially exceeding default readiness probe + timeout.
+- **Solution**: Increase Helm timeout from 5m to 10m: `--wait --timeout 10m`
+- **Note**: Helm may show "failed" status but pods deploy successfully. Verify with: `kubectl get pods -n dosm-dev`
+
+**Pod Fails Readiness/Liveness Probes**:
+- **Cause**: Model download during first request exceeds probe timeouts
+- **Solution**: Increased `livenessProbe.initialDelaySeconds: 60` and `timeoutSeconds: 10`
+
+**PostgreSQL Connection Error "could not translate host name"**:
+- **Cause**: Special characters in DATABASE_URL password not URL-encoded
+- **Solution**: Encode password: `@` → `%40`, `:` → `%3A`, `/` → `%2F`
+
+**Insufficient CPU for Replica Scale-up**:
+- **Cause**: AKS node pool at capacity, increased resource requests (250m CPU) prevent scheduling
+- **Solution**: Temporarily reduce replicas or enable cluster autoscaler:
+```bash
+az aks nodepool update \
+  --resource-group dosm-faq-chatbot-dev-rg \
+  --cluster-name dosm-faq-chatbot-dev-aks \
+  --name system \
+  --enable-cluster-autoscaler \
+  --min-count 1 \
+  --max-count 3
 ```
 
 ## Vector Search Details
@@ -227,18 +308,79 @@ HNSW (Hierarchical Navigable Small World) provides:
 
 ### Unit Tests
 
-Tests in `tests/test_rag_pipeline.py` still work but require:
+Tests use mocked database connections via `conftest.py`:
 ```python
-# conftest.py or test setup
-os.environ["DATABASE_URL"] = "postgresql://test:test@localhost:5432/test_db"
+@pytest.fixture(autouse=True)
+def mock_database_operations(monkeypatch):
+    """Mock psycopg2 database operations for all tests."""
+    mock_conn = MagicMock()
+    mock_conn.encoding = 'UTF8'
+    mock_conn.__enter__ = MagicMock(return_value=mock_conn)
+    mock_conn.__exit__ = MagicMock(return_value=None)
+    
+    mock_cursor = MagicMock()
+    mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+    mock_cursor.__exit__ = MagicMock(return_value=None)
+    mock_conn.cursor.return_value = mock_cursor
+    
+    mock_connect = MagicMock(return_value=mock_conn)
+    monkeypatch.setattr("psycopg2.connect", mock_connect)
+    monkeypatch.setattr("psycopg2.extras.execute_values", MagicMock())
+```
+
+Run tests:
+```bash
+pytest tests/
 ```
 
 ### Integration Testing
 
-1. Populate test database with sample data
-2. Query `/predict` endpoint
-3. Verify embeddings retrieved from PostgreSQL
-4. Check response citations and confidence scores
+1. Deploy to dev environment
+2. Ingest sample data via Kubernetes Job:
+```bash
+kubectl apply -f ingest-job.yaml -n dosm-dev
+kubectl wait --for=condition=complete job/rag-ingest-sample -n dosm-dev --timeout=5m
+kubectl logs job/rag-ingest-sample -n dosm-dev
+```
+
+3. Test predict endpoint:
+```bash
+kubectl run test-predict -n dosm-dev --rm -i --restart=Never --image=curlimages/curl:latest -- \
+  curl -X POST http://faq-chatbot-dosm-insights:80/predict \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: dev-api-key" \
+  -d '{"query":"what is CPI for 2023?"}' \
+  --max-time 90
+```
+
+Expected response:
+```json
+{
+  "prediction": {
+    "answer": "Grounded answer (rows 0–4): year=2023, indicator=CPI, value=121.0...",
+    "citations": [{
+      "source": "dosm_dataset",
+      "snippet": "year=2023 indicator=CPI value=121.0...",
+      "page_or_row": 0
+    }],
+    "confidence": 0.64,
+    "failure_mode": null
+  },
+  "latency_ms": 26371,
+  "model_version": "dosm-rag-bc11222"
+}
+```
+
+**Note**: First request takes ~26-30 seconds due to model download. Subsequent requests are much faster (~200-500ms).
+
+4. Verify database state:
+```bash
+PGPASSWORD='YourPassword' psql \
+  -h pg-dosm.postgres.database.azure.com \
+  -U dosm_admin \
+  -d dosm-faq-chatbot-dev-postgres \
+  -c "SELECT COUNT(*), MAX(created_at) FROM embeddings;"
+```
 
 ### Performance Validation
 

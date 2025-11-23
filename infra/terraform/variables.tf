@@ -73,8 +73,8 @@ variable "api_key" {
 }
 variable "aks_dev_node_size" {
 	type    = string
-	# Upgraded to D4s_v3 for better LLM model support (4 vCPU, 16GB RAM)
-	default = "Standard_D4s_v3"
+	# Standard_D2s_v3: 2 vCPU, 8GB RAM
+	default = "Standard_D2s_v3"
 }
 variable "aks_dev_min_count" {
 	type    = number
@@ -88,8 +88,8 @@ variable "aks_dev_max_count" {
 }
 variable "aks_prod_node_size" {
 	type    = string
-	# Upgraded to D4s_v3 for production workloads with better LLM model support
-	default = "Standard_D4s_v3"
+	# Standard_E2s_v3: 2 vCPU, 16GB RAM - memory-optimized
+	default = "Standard_E2s_v3"
 }
 variable "aks_prod_min_count" {
 	type    = number

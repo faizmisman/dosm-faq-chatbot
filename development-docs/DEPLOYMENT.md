@@ -3,8 +3,12 @@
 ## Required Azure Resources
 
 ### 1. **Azure Kubernetes Service (AKS)**
-- **Purpose**: Host API pods with HPA, run 2+ replicas for availability
+- **Purpose**: Host API pods with HPA, run 1-2 replicas for availability
 - **Recommended SKU**: `Standard_D2s_v5` (2 vCPU, 8 GB) for dev; `Standard_D4s_v5` for prod
+- **Resource Requirements per pod**:
+  - CPU: 250m request, 1000m limit
+  - Memory: 512Mi request, 1Gi limit
+  - Reason: Embedding model download (~100MB) + inference requires sufficient memory
 - **Features needed**:
   - Managed identity enabled
   - Azure Monitor Container Insights
@@ -19,12 +23,16 @@
   - Content trust for prod
 
 ### 3. **Azure Database for PostgreSQL – Flexible Server**
-- **Purpose**: Store inference request logs, model metadata
+- **Purpose**: Store inference request logs, vector embeddings (pgvector), model metadata
 - **Recommended SKU**: `Burstable_B1ms` (1 vCore, 2 GB) for dev; `GeneralPurpose_D2s_v3` for prod
+- **Required Extensions**: 
+  - `pgvector` (for vector similarity search)
+  - `pg_stat_statements` (for query performance monitoring)
 - **Features**:
   - High availability (zone-redundant) for prod
   - Automated backups (7-35 days retention)
   - Private endpoint or VNET integration recommended
+  - Firewall rules configured for AKS egress IPs
 
 ### 4. **Azure Storage Account**
 - **Purpose**: Store raw DOSM datasets, vector store snapshots, training artifacts
@@ -162,8 +170,10 @@ Push to `main` branch triggers `deploy-dev.yml`:
 1. Runs tests
 2. Builds Docker image with short SHA tag
 3. Pushes to ACR
-4. Deploys to dev AKS namespace via Helm
+4. Deploys to dev AKS namespace via Helm (with 10-minute timeout)
 5. Smoke tests `/health` endpoint
+
+**Note**: First deployment may take 10+ minutes as pods download the embedding model (~100MB). Helm uses `--wait --timeout 10m` to accommodate this. Subsequent deployments are faster.
 
 For prod deployment, create a version tag:
 ```bash
@@ -471,11 +481,25 @@ curl http://localhost:8000/health
 
 ## Troubleshooting
 
+### Helm Deployment Issues
+
+**"UPGRADE FAILED: context deadline exceeded"**
+- **Cause**: Helm waits for pods to be Ready. First pod start downloads embedding model (~26-30 seconds), which may exceed 5-minute timeout.
+- **Solution**: Deploy-dev workflow now uses `--wait --timeout 10m`. For manual deployments:
+  ```bash
+  helm upgrade --install faq-chatbot-dev ./deploy/helm \
+    -f deploy/helm/values-dev.yaml \
+    --wait --timeout 10m
+  ```
+- **Note**: Helm may report "failed" but pods deploy successfully. Verify: `kubectl get pods -n dosm-dev`
+
+### General Troubleshooting
+
 - **ACR pull fails**: Check `az aks check-acr` and managed identity assignment
 - **Key Vault access denied**: Verify RBAC role "Key Vault Secrets User" for AKS identity
-- **Postgres connection refused**: Check firewall rules, verify connection string
+- **Postgres connection refused**: Check firewall rules, verify connection string, ensure password is URL-encoded
 - **GitHub Actions 403**: Ensure federated credential subject matches repo path exactly
-- **Pod CrashLoopBackOff**: Check logs (`kubectl logs`), verify secrets exist
+- **Pod CrashLoopBackOff**: Check logs (`kubectl logs`), verify secrets exist, ensure DATABASE_URL password uses URL encoding (`@` → `%40`)
 
 ---
 
