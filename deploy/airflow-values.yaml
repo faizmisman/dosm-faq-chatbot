@@ -67,15 +67,12 @@ dags:
 
 # Environment variables for DAG access to services
 env:
-  - name: DATABASE_URL
-    valueFrom:
-      secretKeyRef:
-        name: dev-db-url
-        key: DATABASE_URL
   - name: AIRFLOW__CORE__DAGS_FOLDER
-    value: /opt/airflow/dags
+    value: "/opt/airflow/dags"
   - name: PYTHONPATH
-    value: /opt/airflow/dags:/opt/airflow/dags/repo
+    value: "/opt/airflow/dags:/opt/airflow/dags/repo"
+  - name: MLFLOW_TRACKING_URI
+    value: "http://mlflow.mlflow.svc.cluster.local:5000"
 
 # Extra pip packages for DAGs
 extraPipPackages:
