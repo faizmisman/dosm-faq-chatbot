@@ -25,8 +25,9 @@ infra/terraform/terraform.tfstate*
 infra/terraform/plan.out
 infra/terraform/*.tfvars
 
-# VSCode settings (optional, keep if intentional)
+# IDE settings (never push to remote)
 .vscode/
+.idea/
 
 # Python build/test caches
 .pytest_cache/
