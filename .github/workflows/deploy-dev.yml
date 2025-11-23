@@ -66,7 +66,7 @@ jobs:
             --set image.repository=${{ secrets.ACR_NAME }}.azurecr.io/dosm-faq-chatbot \
             --set image.tag=$IMAGE_TAG \
             --set env.MODEL_VERSION=dosm-rag-$IMAGE_TAG \
-            --wait --timeout 5m
+            --wait --timeout 10m
       - name: Smoke test /health
         run: |
           kubectl run curl-pod --image=curlimages/curl:8.7.1 -i --rm --restart=Never --namespace=dosm-dev -- curl -s http://faq-chatbot-dosm-insights:8000/health || true
