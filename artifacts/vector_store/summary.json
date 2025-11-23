@@ -1,8 +1,0 @@
-{
-  "timestamp": "2025-11-22T15:57:49.085461Z",
-  "rows": 5,
-  "chunks": 1,
-  "chunk_size": 25,
-  "model": "sentence-transformers/all-MiniLM-L6-v2",
-  "dataset": "dosm_sample.csv"
-}

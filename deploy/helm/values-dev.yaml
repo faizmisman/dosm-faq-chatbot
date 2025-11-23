@@ -17,7 +17,6 @@ env:
   LOG_LEVEL: INFO
   # API_KEY and DATABASE_URL will come from secrets when enabled
   MODEL_VERSION: "dosm-rag-dev"
-  VECTORSTORE_DIR: "/app/artifacts/vector_store"
   DB:
     URL_SECRET: dev-db-url
     URL_KEY: DATABASE_URL
@@ -62,7 +61,6 @@ ragIngest:
     tag: dev
   model: "sentence-transformers/all-MiniLM-L6-v2"
   chunkSize: 25
-  outputDir: "/app/artifacts/vector_store"
   dataset:
     # Option 1: Provide inline dataset content (small CSV) via ConfigMap
     inline: |
@@ -88,7 +86,6 @@ ragIngestCron:
     tag: dev
   model: "sentence-transformers/all-MiniLM-L6-v2"
   chunkSize: 25
-  outputDir: "/app/artifacts/vector_store"
   dataset:
     inline: |
       year,indicator,value,notes

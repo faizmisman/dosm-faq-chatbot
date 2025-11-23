@@ -33,15 +33,18 @@ spec:
               args:
                 - --input
                 - {{ .Values.ragIngestCron.dataset.mountPath }}/{{ .Values.ragIngestCron.dataset.fileName }}
-                - --out-dir
-                - {{ .Values.ragIngestCron.outputDir }}
                 - --model
                 - {{ .Values.ragIngestCron.model }}
                 - --chunk-size
                 - "{{ .Values.ragIngestCron.chunkSize }}"
               env:
-                - name: VECTORSTORE_DIR
-                  value: {{ .Values.ragIngestCron.outputDir }}
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "dosm-insights.fullname" . }}-secret
+                      key: database-url
+                - name: EMBEDDING_MODEL_NAME
+                  value: {{ .Values.ragIngestCron.model }}
               volumeMounts:
                 - name: rag-dataset
                   mountPath: {{ .Values.ragIngestCron.dataset.mountPath }}

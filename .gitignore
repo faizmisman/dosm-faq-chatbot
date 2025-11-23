@@ -45,3 +45,5 @@ Thumbs.db
 # Evaluation results (exclude generated files, keep queries)
 eval/results*.json
 
+# Vector store artifacts (now stored in PostgreSQL database)
+artifacts/

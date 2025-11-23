@@ -32,12 +32,13 @@ def _init_store_if_needed():
     global _VECTOR_STORE
     if _VECTOR_STORE is not None:
         return
-    # Prefer loading prebuilt store if VECTORSTORE_DIR exists
-    persist_dir = os.getenv("VECTORSTORE_DIR") or ".vectorstore"
-    store = load_vector_store(persist_dir)
-    if store is not None:
-        _VECTOR_STORE = store
+    # Try loading from PostgreSQL database first
+    try:
+        _VECTOR_STORE = load_vector_store()
         return
+    except Exception:
+        pass
+    # Fallback: rebuild from dataset if available
     path = os.getenv("DATASET_PATH")
     if not path or not os.path.exists(path):
         return

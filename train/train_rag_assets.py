@@ -1,22 +1,22 @@
 """RAG asset builder
 
-Creates a persisted Chroma vector store from a tabular DOSM dataset.
+Populates PostgreSQL embeddings table from a tabular DOSM dataset.
 
 Usage:
-  python train/train_rag_assets.py --input path/to/data.csv --out-dir artifacts/vector_store 
+  python train/train_rag_assets.py --input path/to/data.csv
   # optionally specify model
-  python train/train_rag_assets.py --input data.csv --out-dir artifacts/vector_store \
+  python train/train_rag_assets.py --input data.csv \
 	--model sentence-transformers/all-MiniLM-L6-v2
 
-Environment fallbacks:
+Environment requirements:
+  DATABASE_URL = PostgreSQL connection string (required)
   INPUT_DATASET = path to dataset if --input not provided
-  VECTORSTORE_DIR = output directory if --out-dir not provided
   EMBEDDING_MODEL_NAME = model name if --model not provided
 
 Outputs:
-  - Persisted Chroma store at out-dir
-  - chunks.json metadata for traceability
-  - summary.json with basic statistics
+  - Embeddings inserted into PostgreSQL embeddings table
+  - chunks.json metadata for traceability (optional, via --metadata-dir)
+  - summary.json with basic statistics (optional, via --metadata-dir)
 """
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ from app.llm_rag.embeddings import build_vector_store
 def parse_args():
 	ap = argparse.ArgumentParser()
 	ap.add_argument("--input", help="Path to dataset CSV", default=os.getenv("INPUT_DATASET"))
-	ap.add_argument("--out-dir", help="Output directory for vector store", default=os.getenv("VECTORSTORE_DIR", "artifacts/vector_store"))
+	ap.add_argument("--metadata-dir", help="Optional directory to output metadata JSON files", default=None)
 	ap.add_argument("--model", help="Embedding model name", default=os.getenv("EMBEDDING_MODEL_NAME", "sentence-transformers/all-MiniLM-L6-v2"))
 	ap.add_argument("--chunk-size", type=int, default=25, help="Rows per chunk")
 	return ap.parse_args()
@@ -48,10 +48,12 @@ def main():
 	if not os.path.exists(args.input):
 		print(f"[error] input dataset not found: {args.input}", file=sys.stderr)
 		return 2
-	out_dir = Path(args.out_dir)
-	out_dir.mkdir(parents=True, exist_ok=True)
+	
+	db_url = os.getenv("DATABASE_URL")
+	if not db_url:
+		print("[error] DATABASE_URL environment variable required", file=sys.stderr)
+		return 2
 
-	os.environ["VECTORSTORE_DIR"] = str(out_dir)  # ensure build_vector_store uses this path
 	os.environ["EMBEDDING_MODEL_NAME"] = args.model
 
 	print(f"[info] Loading dataset: {args.input}")
@@ -62,27 +64,29 @@ def main():
 	print(f"[info] Built {len(chunks)} chunks (chunk_size={chunk_size})")
 
 	print(f"[info] Building vector store with model {args.model}")
+	print(f"[info] Inserting embeddings into PostgreSQL database")
 	store_wrapper = build_vector_store(chunks)
-	# Force persistence flush (Chroma persists automatically when created)
-	try:
-		store_wrapper.store.persist()
-	except Exception:
-		pass
+	print(f"[done] Inserted {len(chunks)} embeddings into database")
 
-	# Save metadata
-	with (out_dir / "chunks.json").open("w", encoding="utf-8") as f:
-		json.dump(chunks, f, ensure_ascii=False, indent=2)
-	summary = {
-		"timestamp": datetime.utcnow().isoformat() + "Z",
-		"rows": len(df),
-		"chunks": len(chunks),
-		"chunk_size": chunk_size,
-		"model": args.model,
-		"dataset": os.path.basename(args.input)
-	}
-	with (out_dir / "summary.json").open("w", encoding="utf-8") as f:
-		json.dump(summary, f, indent=2)
-	print(f"[done] Vector store persisted to {out_dir}")
+	# Save metadata if output directory specified
+	if args.metadata_dir:
+		out_dir = Path(args.metadata_dir)
+		out_dir.mkdir(parents=True, exist_ok=True)
+		
+		with (out_dir / "chunks.json").open("w", encoding="utf-8") as f:
+			json.dump(chunks, f, ensure_ascii=False, indent=2)
+		summary = {
+			"timestamp": datetime.utcnow().isoformat() + "Z",
+			"rows": len(df),
+			"chunks": len(chunks),
+			"chunk_size": chunk_size,
+			"model": args.model,
+			"dataset": os.path.basename(args.input)
+		}
+		with (out_dir / "summary.json").open("w", encoding="utf-8") as f:
+			json.dump(summary, f, indent=2)
+		print(f"[info] Metadata saved to {out_dir}")
+	
 	return 0
 
 if __name__ == "__main__":

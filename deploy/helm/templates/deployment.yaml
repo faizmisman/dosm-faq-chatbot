@@ -43,10 +43,6 @@ spec:
               value: "{{ .Values.env.MODEL_VERSION | default .Values.image.tag }}"
             - name: LOG_LEVEL
               value: "{{ .Values.env.LOG_LEVEL | default "INFO" }}"
-            {{- if .Values.env.VECTORSTORE_DIR }}
-            - name: VECTORSTORE_DIR
-              value: "{{ .Values.env.VECTORSTORE_DIR }}"
-            {{- end }}
             {{- /* External secret override for API_KEY */}}
             {{- if and .Values.env.API_KEY_SECRET .Values.env.API_KEY_KEY }}
             - name: API_KEY

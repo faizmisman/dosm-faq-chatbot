@@ -26,15 +26,18 @@ spec:
           args:
             - --input
             - {{ .Values.ragIngest.dataset.mountPath }}/{{ .Values.ragIngest.dataset.fileName }}
-            - --out-dir
-            - {{ .Values.ragIngest.outputDir }}
             - --model
             - {{ .Values.ragIngest.model }}
             - --chunk-size
             - "{{ .Values.ragIngest.chunkSize }}"
           env:
-            - name: VECTORSTORE_DIR
-              value: {{ .Values.ragIngest.outputDir }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dosm-insights.fullname" . }}-secret
+                  key: database-url
+            - name: EMBEDDING_MODEL_NAME
+              value: {{ .Values.ragIngest.model }}
           volumeMounts:
             - name: rag-dataset
               mountPath: {{ .Values.ragIngest.dataset.mountPath }}
