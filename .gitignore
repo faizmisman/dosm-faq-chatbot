@@ -13,9 +13,9 @@ htmlcov/
 *.ipynb_checkpoints/
 # Local data
 sample.csv
-# Development docs now included in repo for CI/CD setup reference
-# development-docs/
-.idea/
+
+# Development documentation (internal only, not pushed to remote)
+development-docs/
 
 # Terraform local artifacts (never commit state or plans)
 infra/terraform/.terraform/
