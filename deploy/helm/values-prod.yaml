@@ -17,6 +17,9 @@ env:
   LOG_LEVEL: INFO
   # API_KEY and DATABASE_URL provided via secrets when enabled
   MODEL_VERSION: "dosm-rag-prod"
+  DB:
+    URL_SECRET: prod-db-url
+    URL_KEY: DATABASE_URL
 nameOverride: "faq-chatbot-dosm-insights"
 fullnameOverride: "faq-chatbot-dosm-insights"
 keyVaultCSI:
@@ -42,7 +45,8 @@ prometheus:
 secrets:
   enabled: true
   apiKey: prod-placeholder  # Replace via external secret management
-  databaseUrl: postgresql://postgres:prodpass@postgres.prod.svc.cluster.local:5432/dosm_insights
+  # databaseUrl removed - provided via external secret 'prod-db-url'
+  databaseUrl: ""
 
 ingress:
   enabled: true
