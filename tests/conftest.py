@@ -14,7 +14,10 @@ os.environ.setdefault("DATABASE_URL", "postgresql://test:test@localhost:5432/tes
 @pytest.fixture(autouse=True)
 def mock_database_operations():
     """Mock database operations for tests without real database."""
-    with patch('psycopg2.connect') as mock_connect:
+    # Mock psycopg2.connect
+    with patch('psycopg2.connect') as mock_connect, \
+         patch('psycopg2.extras.execute_values') as mock_execute_values:
+        
         # Create mock connection and cursor
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
@@ -26,6 +29,7 @@ def mock_database_operations():
         # Set up connection context manager
         mock_conn.__enter__.return_value = mock_conn
         mock_conn.__exit__.return_value = None
+        mock_conn.commit.return_value = None
         
         # Mock connection attributes
         mock_conn.encoding = 'UTF8'
@@ -33,8 +37,9 @@ def mock_database_operations():
         
         mock_connect.return_value = mock_conn
         
-        # Mock cursor.fetchall() to return empty results by default
+        # Mock cursor methods
         mock_cursor.fetchall.return_value = []
         mock_cursor.execute.return_value = None
+        mock_execute_values.return_value = None
         
         yield mock_cursor
