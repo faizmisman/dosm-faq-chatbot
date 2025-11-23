@@ -57,6 +57,14 @@ jobs:
           cluster-name: ${{ secrets.AKS_NAME_DEV }}
       - name: Install Helm
         uses: azure/setup-helm@v4
+      - name: Create namespace if not exists
+        run: kubectl create namespace dosm-dev --dry-run=client -o yaml | kubectl apply -f -
+      - name: Create database secret
+        run: |
+          kubectl create secret generic dev-db-url \
+            --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+            --namespace dosm-dev \
+            --dry-run=client -o yaml | kubectl apply -f -
       - name: Helm upgrade (dev)
         run: |
           IMAGE_TAG=${{ steps.meta.outputs.IMAGE_TAG }}
