@@ -35,16 +35,16 @@ def log_inference(user_id: str | None, query: str, answer: str, model_version: s
     conn = get_conn()
     if conn is None:
         return False
-    is_refusal = failure_mode == "low_confidence" or failure_mode == "refuse"
-    is_low_confidence = failure_mode == "low_confidence"
+    is_refusal = failure_mode == "refuse"
+    is_low_confidence = failure_mode in ("low_confidence", "clarify") and confidence < 0.25
     try:
         cur = conn.cursor()
         cur.execute(
             """
-            INSERT INTO inference_requests (request_id, user_id, query, answer, model_version, latency_ms, is_refusal, is_low_confidence)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            INSERT INTO inference_requests (request_id, user_id, query, answer, model_version, latency_ms, is_refusal, is_low_confidence, confidence, failure_mode)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             """,
-            [str(uuid.uuid4()), user_id, query, answer, model_version, latency_ms, is_refusal, is_low_confidence]
+            [str(uuid.uuid4()), user_id, query, answer, model_version, latency_ms, is_refusal, is_low_confidence, confidence, failure_mode]
         )
         return True
     except Exception as e:

@@ -41,9 +41,9 @@ jobs:
           source .venv/bin/activate
           pytest -q
 
-      - name: Build Docker image
+      - name: Build Docker images
         run: |
-          docker build -t dosm-insights-api:${{ github.sha }} .
+          docker build -t dosm-insights-api:${{ github.sha }} -t dosm-faq-chatbot:${{ github.sha }} .
 
       - name: Azure login (OIDC)
         uses: azure/login@v2
@@ -56,18 +56,23 @@ jobs:
         run: |
           az acr login -n ${{ secrets.ACR_NAME }}
 
-      - name: Tag & push image
+      - name: Tag & push images
         env:
           ACR_NAME: ${{ secrets.ACR_NAME }}
         run: |
-          IMAGE_TAG=${{ env.ACR_NAME }}.azurecr.io/dosm-insights-api:${{ github.sha }}
-          docker tag dosm-insights-api:${{ github.sha }} $IMAGE_TAG
-          docker push $IMAGE_TAG
+          INSIGHTS_IMAGE=${{ env.ACR_NAME }}.azurecr.io/dosm-insights-api:${{ github.sha }}
+          FAQ_IMAGE=${{ env.ACR_NAME }}.azurecr.io/dosm-faq-chatbot:${{ github.sha }}
+          docker tag dosm-insights-api:${{ github.sha }} $INSIGHTS_IMAGE
+          docker tag dosm-faq-chatbot:${{ github.sha }} $FAQ_IMAGE
+          docker push $INSIGHTS_IMAGE
+          docker push $FAQ_IMAGE
+          echo $INSIGHTS_IMAGE > insights-image-tag.txt
+          echo $FAQ_IMAGE > faq-image-tag.txt
 
-      - name: Upload artifact (image tag)
+      - name: Upload artifact (image tags)
         uses: actions/upload-artifact@v4
         with:
-          name: image-tag
-          path: image-tag.txt
-        if: always()
-        run: echo $IMAGE_TAG > image-tag.txt
+          name: image-tags
+          path: |
+            insights-image-tag.txt
+            faq-image-tag.txt

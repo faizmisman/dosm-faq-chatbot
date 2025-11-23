@@ -1,6 +1,6 @@
 import os
 from pydantic import Field
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     LLM_API_KEY: str | None = None
@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = Field(default="INFO")
     API_KEY: str | None = None  # If set, required via X-API-Key header on protected endpoints
 
-    class Config:
-        env_file = ".env"
+    # Pydantic v2 configuration: ignore unrelated environment variables
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 settings = Settings()

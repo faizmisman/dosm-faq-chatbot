@@ -486,27 +486,45 @@ kubectl describe ingress dosm-faq-chatbot-ingress -n dosm-dev
 
 ## Next Steps
 
-1. **Configure Monitoring**:
+1. **CI/CD (GitHub Actions)**:
+   - Workflow: `.github/workflows/deploy-dev.yml` triggers on `main` push.
+   - Stages: test -> build & push -> helm upgrade.
+   - Required GitHub Secrets:
+     - `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`
+     - `ACR_NAME` (e.g. `dosmfaqchatbotacr1lw5a`)
+     - `AKS_RG_DEV`, `AKS_NAME_DEV` (dev resource group & cluster name)
+   - Image tag uses short SHA; model version set to `dosm-rag-<sha>`.
+   - Extend similarly for prod (`AKS_RG_PROD`, `AKS_NAME_PROD`) in a separate workflow.
+   - Add OIDC federated credential in Azure AD for GitHub repository (no static secrets).
+   - Command override sample (manual):
+     ```bash
+     helm upgrade --install faq-chatbot-dev deploy/helm \
+       --namespace dosm-dev -f deploy/helm/values-dev.yaml \
+       --set image.repository=$ACR_LOGIN_SERVER/dosm-faq-chatbot \
+       --set image.tag=$(git rev-parse --short HEAD) \
+       --set env.MODEL_VERSION=dosm-rag-$(git rev-parse --short HEAD)
+     ```
+2. **Configure Monitoring**:
    - Set up Application Insights for distributed tracing
    - Configure log queries in Log Analytics
    - Create alert rules for error rates, latency, pod restarts
 
-2. **Enable GitOps** (optional):
+3. **Enable GitOps** (optional):
    - Install Flux or ArgoCD for declarative deployments
    - Store Helm values in separate Git repo
    - Automate dev → prod promotion
 
-3. **Secure Ingress**:
+4. **Secure Ingress**:
    - Configure TLS certificates (Let's Encrypt or Azure-managed)
    - Enable WAF (Web Application Firewall)
    - Restrict ingress to specific IPs/VNets
 
-4. **Backup Strategy**:
+5. **Backup Strategy**:
    - Configure PostgreSQL automated backups (7-35 days retention)
    - Export embeddings to Azure Storage Account regularly
    - Document disaster recovery procedures
 
-5. **Performance Tuning**:
+6. **Performance Tuning**:
    - Load test with Locust/k6 to determine optimal replica count
    - Adjust HPA targets based on actual traffic patterns
    - Monitor RAG query latency and optimize vector search

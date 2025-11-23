@@ -1,0 +1,63 @@
+{{- if .Values.ragIngest.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "dosm-insights.fullname" . }}-rag-ingest
+  labels:
+    app.kubernetes.io/name: {{ include "dosm-insights.name" . }}
+    app.kubernetes.io/component: rag-ingest
+spec:
+  backoffLimit: {{ .Values.ragIngest.backoffLimit | default 1 }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "dosm-insights.name" . }}
+        app.kubernetes.io/component: rag-ingest
+    spec:
+      restartPolicy: {{ .Values.ragIngest.restartPolicy | default "Never" }}
+      containers:
+        - name: rag-ingest
+          image: "{{ .Values.ragIngest.image.repository }}:{{ .Values.ragIngest.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          command:
+            - python
+            - -m
+            - train.train_rag_assets
+          args:
+            - --input
+            - {{ .Values.ragIngest.dataset.mountPath }}/{{ .Values.ragIngest.dataset.fileName }}
+            - --out-dir
+            - {{ .Values.ragIngest.outputDir }}
+            - --model
+            - {{ .Values.ragIngest.model }}
+            - --chunk-size
+            - "{{ .Values.ragIngest.chunkSize }}"
+          env:
+            - name: VECTORSTORE_DIR
+              value: {{ .Values.ragIngest.outputDir }}
+          volumeMounts:
+            - name: rag-dataset
+              mountPath: {{ .Values.ragIngest.dataset.mountPath }}
+      volumes:
+        - name: rag-dataset
+          {{- if .Values.ragIngest.dataset.pvcName }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.ragIngest.dataset.pvcName }}
+          {{- else }}
+          configMap:
+            name: {{ include "dosm-insights.fullname" . }}-rag-dataset
+          {{- end }}
+---
+{{- if and (not .Values.ragIngest.dataset.pvcName) .Values.ragIngest.dataset.inline }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "dosm-insights.fullname" . }}-rag-dataset
+  labels:
+    app.kubernetes.io/name: {{ include "dosm-insights.name" . }}
+    app.kubernetes.io/component: rag-dataset
+data:
+  {{ .Values.ragIngest.dataset.fileName }}: |
+{{ .Values.ragIngest.dataset.inline | indent 4 }}
+{{- end }}
+{{- end }}

@@ -1,6 +1,7 @@
 image:
-  repository: youracr.azurecr.io/dosm-insights-api
+  repository: dosmfaqchatbotacr1lw5a.azurecr.io/dosm-faq-chatbot
   tag: dev
+  pullSecretName: "acr-pull"  # temporary until managed identity pulls succeed
 
 replicaCount: 2
 
@@ -16,6 +17,26 @@ env:
   LOG_LEVEL: INFO
   # API_KEY and DATABASE_URL will come from secrets when enabled
   MODEL_VERSION: "dosm-rag-dev"
+  VECTORSTORE_DIR: "/app/artifacts/vector_store"
+  DB:
+    URL_SECRET: dev-db-url
+    URL_KEY: DATABASE_URL
+nameOverride: "faq-chatbot-dosm-insights"
+fullnameOverride: "faq-chatbot-dosm-insights"
+keyVaultCSI:
+  enabled: false
+  tenantId: "00000000-0000-0000-0000-000000000000" # replace with Azure AD tenant ID
+  vaultName: "dosm-kv-dev" # replace with Key Vault name
+  objects: |
+    array:
+      - objectName: api-key
+        objectType: secret
+        objectVersion: "" # optional
+      - objectName: database-url
+        objectType: secret
+  secretFiles:
+    API_KEY: /mnt/secrets-store/api-key
+    DATABASE_URL: /mnt/secrets-store/database-url
 
 prometheus:
   scrape: true
@@ -25,9 +46,59 @@ prometheus:
 secrets:
   enabled: true
   apiKey: dev-api-key
-  databaseUrl: postgresql://postgres:devpass@postgres.dev.svc.cluster.local:5432/dosm_insights
+  # databaseUrl removed from file; provided via external secret 'dev-db-url'
+  databaseUrl: ""
 
 ingress:
   enabled: true
   className: nginx
   host: dosm-dev.example.com
+
+# RAG ingestion Job configuration (disabled by default)
+ragIngest:
+  enabled: false
+  image:
+    repository: dosmfaqchatbotacr1lw5a.azurecr.io/dosm-faq-chatbot
+    tag: dev
+  model: "sentence-transformers/all-MiniLM-L6-v2"
+  chunkSize: 25
+  outputDir: "/app/artifacts/vector_store"
+  dataset:
+    # Option 1: Provide inline dataset content (small CSV) via ConfigMap
+    inline: |
+      year,indicator,value,notes
+      2022,CPI,118.4,Consumer Price Index base 2015=100
+      2023,CPI,121.0,Moderate inflation increase
+      2023,UnemploymentRate,3.5,Percentage of labor force unemployed
+      2024,CPI,123.2,Projected CPI early estimate
+      2024,UnemploymentRate,3.4,Slight improvement year over year
+    fileName: dataset.csv
+    # Option 2: Use existing PVC instead of inline config (set pvcName)
+    pvcName: ""
+    mountPath: /ingest
+  backoffLimit: 1
+  restartPolicy: Never
+
+# Scheduled RAG ingestion (CronJob) configuration
+ragIngestCron:
+  enabled: false
+  schedule: "0 2 * * *"  # daily at 02:00
+  image:
+    repository: dosmfaqchatbotacr1lw5a.azurecr.io/dosm-faq-chatbot
+    tag: dev
+  model: "sentence-transformers/all-MiniLM-L6-v2"
+  chunkSize: 25
+  outputDir: "/app/artifacts/vector_store"
+  dataset:
+    inline: |
+      year,indicator,value,notes
+      2022,CPI,118.4,Consumer Price Index base 2015=100
+      2023,CPI,121.0,Moderate inflation increase
+      2023,UnemploymentRate,3.5,Percentage of labor force unemployed
+      2024,CPI,123.2,Projected CPI early estimate
+      2024,UnemploymentRate,3.4,Slight improvement year over year
+    fileName: dataset.csv
+    pvcName: ""
+    mountPath: /ingest
+  backoffLimit: 1
+  restartPolicy: Never

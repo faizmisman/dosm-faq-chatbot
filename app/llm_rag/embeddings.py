@@ -49,3 +49,32 @@ def build_vector_store(chunks: List[Dict[str, Any]]) -> VectorStoreWrapper:
 					out.append((self.doc_map.get(doc.metadata.get("id"), {}), float(score)))
 				return out
 		return FallbackStore()
+
+def load_vector_store(persist_dir: str) -> VectorStoreWrapper | None:
+	"""Load a previously persisted Chroma vector store and reconstruct doc_map.
+
+	Returns None if loading fails.
+	"""
+	model_name = os.getenv("EMBEDDING_MODEL_NAME", "sentence-transformers/all-MiniLM-L6-v2")
+	if not os.path.exists(persist_dir):
+		return None
+	try:
+		embeddings = HuggingFaceEmbeddings(model_name=model_name)
+		store = Chroma(persist_directory=persist_dir, embedding_function=embeddings)
+		# Rebuild doc_map from stored collection
+		data = store.get()
+		doc_map: Dict[str, Dict[str, Any]] = {}
+		for doc_text, meta in zip(data.get("documents", []), data.get("metadatas", [])):
+			_id = meta.get("id") or meta.get("source") or str(len(doc_map))
+			entry = {
+				"id": _id,
+				"content": doc_text,
+				"start_row": meta.get("start_row"),
+				"end_row": meta.get("end_row")
+			}
+			# Filter out empty content
+			if entry["content"]:
+				doc_map[_id] = entry
+		return VectorStoreWrapper(store, doc_map)
+	except Exception:
+		return None

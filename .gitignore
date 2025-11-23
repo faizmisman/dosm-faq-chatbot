@@ -16,3 +16,33 @@ sample.csv
 # Ignore development docs directory (requested removal from repo)
 development-docs/
 .idea/
+
+# Terraform local artifacts (never commit state or plans)
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.backup
+infra/terraform/terraform.tfstate*
+infra/terraform/plan.out
+infra/terraform/*.tfvars
+
+# VSCode settings (optional, keep if intentional)
+.vscode/
+
+# Python build/test caches
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Env / secrets
+.env.local
+.env.*
+
+# System files
+Thumbs.db
+*.swp
+
+# Large artifacts / evaluation results
+artifacts/
+eval/results*.json
+

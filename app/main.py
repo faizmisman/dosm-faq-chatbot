@@ -21,6 +21,8 @@ RAG_DECISIONS = Counter(
     "RAG decision outcomes",
     ["decision", "failure_mode"]
 )
+RAG_REFUSALS = Counter("rag_refusals_total", "Total refusal events")
+RAG_LOW_CONF = Counter("rag_low_confidence_total", "Total low confidence events")
 
 def build_health_payload():
     db_status = "unconfigured"
@@ -77,8 +79,12 @@ def predict(req: PredictRequest):
         HTTP_LATENCY.observe(latency_ms)
         # RAG decision classification
         decision = "answer"
-        if rr.failure_mode == "low_confidence":
+        if rr.failure_mode == "refuse":
             decision = "refuse"
+            RAG_REFUSALS.inc()
+        elif rr.failure_mode == "low_confidence":
+            decision = "low_confidence"
+            RAG_LOW_CONF.inc()
         elif rr.failure_mode == "clarify":
             decision = "clarify"
         RAG_DECISIONS.labels(decision=decision, failure_mode=rr.failure_mode or "none").inc()

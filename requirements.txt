@@ -12,5 +12,7 @@ scikit-learn==1.4.2
 langchain==0.2.11
 langchain-community==0.2.5
 chromadb==0.5.0
-sentence-transformers==2.2.2
+# Upgrade sentence-transformers to satisfy langchain-huggingface (requires >=2.6.0)
+sentence-transformers>=2.6,<3
 langchain-huggingface==0.0.3
+openai>=1.0.0,<2.0.0  # optional LLM provider

@@ -1,6 +1,7 @@
 image:
-  repository: youracr.azurecr.io/dosm-insights-api
+  repository: dosmfaqchatbotacr1lw5a.azurecr.io/dosm-faq-chatbot
   tag: prod
+  pullSecretName: ""  # set to acr-pull or managed identity not needed
 
 replicaCount: 3
 
@@ -16,6 +17,22 @@ env:
   LOG_LEVEL: INFO
   # API_KEY and DATABASE_URL provided via secrets when enabled
   MODEL_VERSION: "dosm-rag-prod"
+nameOverride: "faq-chatbot-dosm-insights"
+fullnameOverride: "faq-chatbot-dosm-insights"
+keyVaultCSI:
+  enabled: false
+  tenantId: "00000000-0000-0000-0000-000000000000" # prod tenant ID placeholder
+  vaultName: "dosm-kv-prod" # prod Key Vault name placeholder
+  objects: |
+    array:
+      - objectName: api-key
+        objectType: secret
+        objectVersion: ""
+      - objectName: database-url
+        objectType: secret
+  secretFiles:
+    API_KEY: /mnt/secrets-store/api-key
+    DATABASE_URL: /mnt/secrets-store/database-url
 
 prometheus:
   scrape: true

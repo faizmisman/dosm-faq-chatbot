@@ -1,0 +1,7 @@
+{"id":"cpi_2023","query":"What is Malaysia's CPI in 2023?","expected_behavior":"answer","notes":"Expect national CPI row","expected_citation_hint":"2023"}
+{"id":"cpi_trend","query":"How did CPI change from 2022 to 2023?","expected_behavior":"answer","notes":"Compare two years"}
+{"id":"unemp_rate","query":"What is the unemployment rate in 2023?","expected_behavior":"answer","notes":"Row with indicator=UnemploymentRate"}
+{"id":"out_of_scope_model","query":"Explain quantum computing algorithms","expected_behavior":"refuse","notes":"Outside dataset domain"}
+{"id":"ambiguous_indicator","query":"Value for 2023?","expected_behavior":"clarify","notes":"Should ask which indicator"}
+{"id":"unemp_projection","query":"Projected unemployment for 2025?","expected_behavior":"refuse","notes":"Future projection not in dataset"}
+{"id":"cpi_notes","query":"Any note on CPI increase?","expected_behavior":"answer","notes":"Should surface notes snippet"}

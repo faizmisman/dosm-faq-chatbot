@@ -1,0 +1,70 @@
+{{- if and .Values.ragIngestCron.enabled (not .Values.ragIngest.enabled) }}
+# Cron-based periodic RAG ingestion. Disabled if ad-hoc Job enabled simultaneously.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "dosm-insights.fullname" . }}-rag-ingest-cron
+  labels:
+    app.kubernetes.io/name: {{ include "dosm-insights.name" . }}
+    app.kubernetes.io/component: rag-ingest-cron
+spec:
+  schedule: "{{ .Values.ragIngestCron.schedule }}"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: {{ .Values.ragIngestCron.backoffLimit | default 1 }}
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: {{ include "dosm-insights.name" . }}
+            app.kubernetes.io/component: rag-ingest-cron
+        spec:
+          restartPolicy: {{ .Values.ragIngestCron.restartPolicy | default "Never" }}
+          containers:
+            - name: rag-ingest
+              image: "{{ .Values.ragIngestCron.image.repository }}:{{ .Values.ragIngestCron.image.tag }}"
+              imagePullPolicy: IfNotPresent
+              command:
+                - python
+                - -m
+                - train.train_rag_assets
+              args:
+                - --input
+                - {{ .Values.ragIngestCron.dataset.mountPath }}/{{ .Values.ragIngestCron.dataset.fileName }}
+                - --out-dir
+                - {{ .Values.ragIngestCron.outputDir }}
+                - --model
+                - {{ .Values.ragIngestCron.model }}
+                - --chunk-size
+                - "{{ .Values.ragIngestCron.chunkSize }}"
+              env:
+                - name: VECTORSTORE_DIR
+                  value: {{ .Values.ragIngestCron.outputDir }}
+              volumeMounts:
+                - name: rag-dataset
+                  mountPath: {{ .Values.ragIngestCron.dataset.mountPath }}
+          volumes:
+            - name: rag-dataset
+              {{- if .Values.ragIngestCron.dataset.pvcName }}
+              persistentVolumeClaim:
+                claimName: {{ .Values.ragIngestCron.dataset.pvcName }}
+              {{- else }}
+              configMap:
+                name: {{ include "dosm-insights.fullname" . }}-rag-dataset-cron
+              {{- end }}
+---
+{{- if and (not .Values.ragIngestCron.dataset.pvcName) .Values.ragIngestCron.dataset.inline }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "dosm-insights.fullname" . }}-rag-dataset-cron
+  labels:
+    app.kubernetes.io/name: {{ include "dosm-insights.name" . }}
+    app.kubernetes.io/component: rag-dataset-cron
+data:
+  {{ .Values.ragIngestCron.dataset.fileName }}: |
+{{ .Values.ragIngestCron.dataset.inline | indent 4 }}
+{{- end }}
+{{- end }}

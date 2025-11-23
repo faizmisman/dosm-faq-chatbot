@@ -1,5 +1,9 @@
 from fastapi.testclient import TestClient
 from app.main import app
+from app.config import settings
+
+# Ensure API key auth disabled for test contract
+settings.API_KEY = None
 
 client = TestClient(app)
 

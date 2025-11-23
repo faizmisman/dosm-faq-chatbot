@@ -20,6 +20,19 @@ spec:
         prometheus.io/path: "{{ .Values.prometheus.path }}"
         {{- end }}
     spec:
+      {{- if .Values.image.pullSecretName }}
+      imagePullSecrets:
+        - name: {{ .Values.image.pullSecretName }}
+      {{- end }}
+        {{- if .Values.keyVaultCSI.enabled }}
+        volumes:
+          - name: secrets-store
+            csi:
+              driver: secrets-store.csi.k8s.io
+              readOnly: true
+              volumeAttributes:
+                secretProviderClass: {{ include "dosm-insights.fullname" . }}-spc
+        {{- end }}
       containers:
         - name: api
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -30,16 +43,53 @@ spec:
               value: "{{ .Values.env.MODEL_VERSION | default .Values.image.tag }}"
             - name: LOG_LEVEL
               value: "{{ .Values.env.LOG_LEVEL | default "INFO" }}"
+            {{- if .Values.env.VECTORSTORE_DIR }}
+            - name: VECTORSTORE_DIR
+              value: "{{ .Values.env.VECTORSTORE_DIR }}"
+            {{- end }}
+            {{- /* External secret override for API_KEY */}}
+            {{- if and .Values.env.API_KEY_SECRET .Values.env.API_KEY_KEY }}
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.env.API_KEY_SECRET }}
+                  key: {{ .Values.env.API_KEY_KEY }}
+            {{- else if .Values.secrets.enabled }}
             - name: API_KEY
               valueFrom:
                 secretKeyRef:
                   name: {{ include "dosm-insights.fullname" . }}-config
                   key: API_KEY
+            {{- end }}
+              {{- if .Values.keyVaultCSI.enabled }}
+              - name: API_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: {{ include "dosm-insights.fullname" . }}-spc-sync
+                    key: API_KEY
+              {{- end }}
+            {{- /* External secret override for DATABASE_URL */}}
+            {{- $db := .Values.env.DB | default dict }}
+            {{- if and $db.URL_SECRET $db.URL_KEY }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $db.URL_SECRET }}
+                  key: {{ $db.URL_KEY }}
+            {{- else if .Values.secrets.enabled }}
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: {{ include "dosm-insights.fullname" . }}-config
                   key: DATABASE_URL
+            {{- end }}
+              {{- if .Values.keyVaultCSI.enabled }}
+              - name: DATABASE_URL
+                valueFrom:
+                  secretKeyRef:
+                    name: {{ include "dosm-insights.fullname" . }}-spc-sync
+                    key: DATABASE_URL
+              {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           readinessProbe:
@@ -56,3 +106,9 @@ spec:
             initialDelaySeconds: 15
             periodSeconds: 20
             timeoutSeconds: 3
+            {{- if .Values.keyVaultCSI.enabled }}
+            volumeMounts:
+              - name: secrets-store
+                mountPath: /mnt/secrets-store
+                readOnly: true
+            {{- end }}
