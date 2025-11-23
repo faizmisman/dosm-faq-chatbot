@@ -1,0 +1,71 @@
+year,indicator,value,unit,notes,source
+2020,CPI,113.2,Index 2015=100,Consumer Price Index impacted by COVID-19 pandemic,DOSM Monthly Statistics
+2021,CPI,115.6,Index 2015=100,Recovery phase with moderate inflation,DOSM Monthly Statistics
+2022,CPI,118.4,Index 2015=100,Post-pandemic inflation pressure from global supply chain,DOSM Monthly Statistics
+2023,CPI,121.0,Index 2015=100,Moderate inflation increase driven by food and energy costs,DOSM Monthly Statistics
+2024,CPI,123.2,Index 2015=100,Projected CPI based on Q1-Q2 data,DOSM Quarterly Bulletin
+2020,UnemploymentRate,4.5,Percentage,Unemployment spike due to MCO and business closures,Labour Force Survey
+2021,UnemploymentRate,4.6,Percentage,Elevated unemployment persisting into recovery,Labour Force Survey
+2022,UnemploymentRate,3.9,Percentage,Labour market recovery as economy reopens,Labour Force Survey
+2023,UnemploymentRate,3.5,Percentage,Continued improvement in labour market conditions,Labour Force Survey
+2024,UnemploymentRate,3.4,Percentage,Near pre-pandemic employment levels,Labour Force Survey Q2
+2020,GDP,1400.0,Billion RM,Sharp GDP contraction due to pandemic lockdowns,National Accounts
+2021,GDP,1502.0,Billion RM,Economic rebound with 3.1% growth,National Accounts
+2022,GDP,1630.0,Billion RM,Strong recovery with 8.7% growth,National Accounts
+2023,GDP,1710.0,Billion RM,Moderate growth at 3.7% amid global headwinds,National Accounts
+2024,GDP,1780.0,Billion RM,Projected GDP based on H1 performance,National Accounts Q2
+2020,MedianIncome,5209,RM per month,Median household income declined during pandemic,Household Income Survey
+2021,MedianIncome,5209,RM per month,Income levels stagnant in recovery phase,Household Income Survey
+2022,MedianIncome,5560,RM per month,Income growth resumes post-pandemic,Household Income Survey
+2023,MedianIncome,5860,RM per month,Median household income shows healthy growth,Household Income Survey
+2024,MedianIncome,6100,RM per month,Projected based on wage growth trends,Economic Outlook
+2020,Poverty,5.6,Percentage,Absolute poverty incidence increased due to pandemic,Household Income Survey
+2021,Poverty,6.2,Percentage,Poverty remained elevated during recovery,Household Income Survey
+2022,Poverty,5.8,Percentage,Poverty declining as economy recovers,Household Income Survey
+2023,Poverty,5.6,Percentage,Poverty rate returning to pre-pandemic levels,Household Income Survey
+2024,Poverty,5.4,Percentage,Continued poverty reduction efforts,Economic Outlook
+2020,ExportTotal,986.0,Billion RM,Exports declined due to global demand shock,External Trade Statistics
+2021,ExportTotal,1124.0,Billion RM,Strong export recovery in electrical and electronics,External Trade Statistics
+2022,ExportTotal,1291.0,Billion RM,Record high exports driven by commodity prices,External Trade Statistics
+2023,ExportTotal,1342.0,Billion RM,Export growth moderated amid global slowdown,External Trade Statistics
+2024,ExportTotal,1380.0,Billion RM,Projected exports for full year,External Trade Q2
+2020,ImportTotal,853.0,Billion RM,Imports fell sharply during pandemic,External Trade Statistics
+2021,ImportTotal,983.0,Billion RM,Import growth rebounded with domestic demand,External Trade Statistics
+2022,ImportTotal,1157.0,Billion RM,Strong import growth for intermediate goods,External Trade Statistics
+2023,ImportTotal,1204.0,Billion RM,Imports grew moderately with domestic consumption,External Trade Statistics
+2024,ImportTotal,1250.0,Billion RM,Projected imports based on H1 data,External Trade Q2
+2020,FDI,24.5,Billion RM,Foreign direct investment dropped during uncertainty,Investment Statistics
+2021,FDI,41.2,Billion RM,FDI recovery as business confidence returns,Investment Statistics
+2022,FDI,48.1,Billion RM,Strong FDI inflows in manufacturing sector,Investment Statistics
+2023,FDI,52.3,Billion RM,Continued FDI growth in electrical and electronics,Investment Statistics
+2024,FDI,55.0,Billion RM,Projected FDI based on approved investments,Investment Statistics Q2
+2020,TourismArrivals,4.3,Million persons,Tourism industry devastated by border closures,Tourism Statistics
+2021,TourismArrivals,0.1,Million persons,Borders remained largely closed throughout year,Tourism Statistics
+2022,TourismArrivals,10.1,Million persons,Tourism recovery after border reopening in April,Tourism Statistics
+2023,TourismArrivals,20.1,Million persons,Tourism rebounds strongly with regional visitors,Tourism Statistics
+2024,TourismArrivals,24.5,Million persons,Projected based on H1 arrival trends,Tourism Statistics Q2
+2020,IndustrialProductionIndex,106.2,Index 2015=100,Manufacturing output contracted during lockdowns,Industrial Production Statistics
+2021,IndustrialProductionIndex,115.8,Index 2015=100,Industrial production recovered with export demand,Industrial Production Statistics
+2022,IndustrialProductionIndex,123.4,Index 2015=100,Strong manufacturing growth in electronics,Industrial Production Statistics
+2023,IndustrialProductionIndex,127.9,Index 2015=100,Moderate growth amid global economic slowdown,Industrial Production Statistics
+2024,IndustrialProductionIndex,131.5,Index 2015=100,Projected based on manufacturing PMI trends,Industrial Production Q2
+2020,LabourProductivity,87.3,Index 2015=100,Productivity declined during pandemic disruptions,Labour Productivity Statistics
+2021,LabourProductivity,91.2,Index 2015=100,Gradual productivity recovery with digitalization,Labour Productivity Statistics
+2022,LabourProductivity,95.8,Index 2015=100,Productivity gains from automation adoption,Labour Productivity Statistics
+2023,LabourProductivity,98.4,Index 2015=100,Continued productivity improvements in services,Labour Productivity Statistics
+2024,LabourProductivity,101.0,Index 2015=100,Projected productivity exceeding pre-pandemic levels,Economic Outlook
+2020,RetailSales,446.0,Billion RM,Retail sales fell sharply during MCO periods,Retail Trade Survey
+2021,RetailSales,466.0,Billion RM,Gradual recovery in consumer spending,Retail Trade Survey
+2022,RetailSales,512.0,Billion RM,Strong rebound in retail activity post-pandemic,Retail Trade Survey
+2023,RetailSales,541.0,Billion RM,Sustained retail growth driven by domestic demand,Retail Trade Survey
+2024,RetailSales,565.0,Billion RM,Projected retail sales based on H1 performance,Retail Trade Q2
+2020,ConstructionValue,124.5,Billion RM,Construction sector contracted with project delays,Construction Statistics
+2021,ConstructionValue,138.2,Billion RM,Gradual recovery with resumed infrastructure projects,Construction Statistics
+2022,ConstructionValue,156.7,Billion RM,Strong growth in residential and civil engineering,Construction Statistics
+2023,ConstructionValue,168.4,Billion RM,Sustained construction activity with MRT3 projects,Construction Statistics
+2024,ConstructionValue,178.0,Billion RM,Projected construction value for full year,Construction Statistics Q2
+2020,PopulationTotal,32.7,Million persons,Population growth slowed during pandemic,Population Statistics
+2021,PopulationTotal,32.9,Million persons,Moderate population increase,Population Statistics
+2022,PopulationTotal,33.1,Million persons,Population grew with returning migrants,Population Statistics
+2023,PopulationTotal,33.4,Million persons,Steady population growth continues,Population Statistics
+2024,PopulationTotal,33.6,Million persons,Projected population based on birth and migration rates,Population Estimates Q2

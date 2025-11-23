@@ -1,0 +1,10 @@
+{"id":"unemp_2023_total","query":"What was the total unemployment in September 2023?","expected_behavior":"answer","notes":"Recent unemployment figure"}
+{"id":"unemp_active_inactive","query":"How many people were actively unemployed vs inactive in 2023?","expected_behavior":"answer","notes":"Breakdown comparison"}
+{"id":"long_term_unemp","query":"What is the trend of long-term unemployment (more than 12 months)?","expected_behavior":"answer","notes":"Should reference unemployed_active_long"}
+{"id":"unemp_2016","query":"Unemployment figures for January 2016?","expected_behavior":"answer","notes":"Historical data from start of dataset"}
+{"id":"pandemic_impact","query":"How did unemployment change during the pandemic?","expected_behavior":"answer","notes":"Should show 2020-2021 spike"}
+{"id":"out_of_scope_gdp","query":"What is Malaysia's GDP growth rate?","expected_behavior":"refuse","notes":"GDP not in unemployment dataset"}
+{"id":"future_projection","query":"Projected unemployment for 2026?","expected_behavior":"refuse","notes":"Future data not available"}
+{"id":"ambiguous_date","query":"Unemployment numbers?","expected_behavior":"clarify","notes":"No specific date provided"}
+{"id":"short_term_unemp","query":"How many people have been unemployed for less than 3 months recently?","expected_behavior":"answer","notes":"unemployed_active_3mo column"}
+{"id":"unemp_duration_breakdown","query":"What is the breakdown of unemployment by duration in 2024?","expected_behavior":"answer","notes":"Recent duration breakdown"}

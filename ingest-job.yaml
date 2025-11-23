@@ -1,36 +1,33 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: dosm-sample-data
-  namespace: dosm-dev
-data:
-  dosm_sample.csv: |
-    year,indicator,value,notes
-    2022,CPI,118.4,Consumer Price Index base 2015=100
-    2023,CPI,121.0,Moderate inflation increase
-    2023,UnemploymentRate,3.5,Percentage of labor force unemployed
-    2024,CPI,123.2,Projected CPI early estimate
-    2024,UnemploymentRate,3.4,Slight improvement year over year
----
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: rag-ingest-sample
+  name: rag-ingest-full
   namespace: dosm-dev
 spec:
+  ttlSecondsAfterFinished: 86400  # Clean up after 24 hours
   template:
     spec:
       restartPolicy: Never
       containers:
         - name: ingest
-          image: dosmfaqchatbotacr1lw5a.azurecr.io/dosm-faq-chatbot:88849d5
+          image: dosmfaqchatbotacr1lw5a.azurecr.io/dosm-faq-chatbot:d72386a
           command:
-            - python
-            - -m
-            - train.train_rag_assets
+            - /bin/sh
+            - -c
           args:
-            - --input
-            - /data/dosm_sample.csv
+            - |
+              set -e
+              echo "[info] Downloading dataset from DOSM..."
+              python3 -c "
+              import urllib.request
+              url = 'https://storage.dosm.gov.my/labour/lfs_month_duration.csv'
+              urllib.request.urlretrieve(url, '/tmp/lfs_month_duration.csv')
+              print(f'Downloaded to /tmp/lfs_month_duration.csv')
+              "
+              echo "[info] Dataset downloaded, $(wc -l < /tmp/lfs_month_duration.csv) rows"
+              echo "[info] Starting ingestion..."
+              python -m train.train_rag_assets --input /tmp/lfs_month_duration.csv
+              echo "[done] Ingestion complete"
           env:
             - name: DATABASE_URL
               valueFrom:
@@ -39,10 +36,12 @@ spec:
                   key: DATABASE_URL
             - name: EMBEDDING_MODEL_NAME
               value: "sentence-transformers/all-MiniLM-L6-v2"
-          volumeMounts:
-            - name: data
-              mountPath: /data
-      volumes:
-        - name: data
-          configMap:
-            name: dosm-sample-data
+            - name: MODEL_VERSION
+              value: "dosm-rag-full-$(date +%Y%m%d)"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
