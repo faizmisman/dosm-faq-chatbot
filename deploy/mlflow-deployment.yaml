@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mlflow-config
+  namespace: mlflow
+data:
+  MLFLOW_BACKEND_STORE_URI: "postgresql://dosm_admin:Kusanagi%402105@pg-dosm.postgres.database.azure.com:5432/mlflow_tracking?sslmode=require"
+  MLFLOW_DEFAULT_ARTIFACT_ROOT: "/mlruns"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow
+  namespace: mlflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mlflow
+  template:
+    metadata:
+      labels:
+        app: mlflow
+    spec:
+      containers:
+      - name: mlflow
+        image: ghcr.io/mlflow/mlflow:v2.9.2
+        ports:
+        - containerPort: 5000
+        env:
+        - name: MLFLOW_BACKEND_STORE_URI
+          valueFrom:
+            configMapKeyRef:
+              name: mlflow-config
+              key: MLFLOW_BACKEND_STORE_URI
+        - name: MLFLOW_DEFAULT_ARTIFACT_ROOT
+          valueFrom:
+            configMapKeyRef:
+              name: mlflow-config
+              key: MLFLOW_DEFAULT_ARTIFACT_ROOT
+        command:
+        - mlflow
+        - server
+        - --host
+        - "0.0.0.0"
+        - --port
+        - "5000"
+        - --backend-store-uri
+        - $(MLFLOW_BACKEND_STORE_URI)
+        - --default-artifact-root
+        - $(MLFLOW_DEFAULT_ARTIFACT_ROOT)
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        volumeMounts:
+        - name: mlruns
+          mountPath: /mlruns
+      volumes:
+      - name: mlruns
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlflow
+  namespace: mlflow
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 5000
+    targetPort: 5000
+    protocol: TCP
+  selector:
+    app: mlflow

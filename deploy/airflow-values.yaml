@@ -1,0 +1,95 @@
+# Airflow Helm Chart Configuration for RAG Pipeline
+# Lightweight setup for dev cluster (Standard_D2s_v3: 8GB RAM)
+
+# Executor: Use LocalExecutor (simpler than CeleryExecutor, no Redis needed)
+executor: "LocalExecutor"
+
+# PostgreSQL backend (reuse existing pg-dosm server)
+postgresql:
+  enabled: false  # Use external PostgreSQL
+
+# External database configuration
+data:
+  metadataConnection:
+    user: dosm_admin
+    pass: "Kusanagi@2105"
+    protocol: postgresql
+    host: pg-dosm.postgres.database.azure.com
+    port: 5432
+    db: airflow_metadata
+    sslmode: require
+
+# Airflow configuration
+config:
+  core:
+    dags_folder: /opt/airflow/dags
+    load_examples: false
+  webserver:
+    expose_config: true
+    authenticate: false  # Simplify for dev; use OAuth/LDAP in prod
+  scheduler:
+    dag_dir_list_interval: 30  # Scan for new DAGs every 30s
+
+# Resource limits (optimize for 8GB dev cluster)
+scheduler:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+webserver:
+  replicas: 1
+  service:
+    type: LoadBalancer  # Expose UI externally
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+# Git-sync for DAGs (sync from your repo)
+dags:
+  gitSync:
+    enabled: true
+    repo: https://github.com/faizmisman/dosm-faq-chatbot.git
+    branch: main
+    subPath: "airflow/dags"  # DAGs location in repo
+    wait: 60  # Sync every 60 seconds
+    maxFailures: 3
+  persistence:
+    enabled: false  # Use git-sync instead of PVC
+
+# Environment variables for DAG access to services
+env:
+  - name: DATABASE_URL
+    valueFrom:
+      secretKeyRef:
+        name: dev-db-url
+        key: DATABASE_URL
+  - name: AIRFLOW__CORE__DAGS_FOLDER
+    value: /opt/airflow/dags
+  - name: PYTHONPATH
+    value: /opt/airflow/dags:/opt/airflow/dags/repo
+
+# Extra pip packages for DAGs
+extraPipPackages:
+  - "sentence-transformers==2.2.2"
+  - "pandas==2.0.3"
+  - "psycopg2-binary==2.9.9"
+  - "mlflow==2.9.2"
+
+# Service accounts
+serviceAccount:
+  create: true
+  name: airflow
+
+# Logs configuration
+logs:
+  persistence:
+    enabled: false  # Use stdout/stderr for dev; consider PVC for prod
