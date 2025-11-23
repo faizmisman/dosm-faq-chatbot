@@ -27,47 +27,51 @@ spec:
               image: "{{ .Values.ragIngestCron.image.repository }}:{{ .Values.ragIngestCron.image.tag }}"
               imagePullPolicy: IfNotPresent
               command:
-                - python
-                - -m
-                - train.train_rag_assets
+                - /bin/sh
+                - -c
               args:
-                - --input
-                - {{ .Values.ragIngestCron.dataset.mountPath }}/{{ .Values.ragIngestCron.dataset.fileName }}
-                - --model
-                - {{ .Values.ragIngestCron.model }}
-                - --chunk-size
-                - "{{ .Values.ragIngestCron.chunkSize }}"
+                - |
+                  set -e
+                  echo "[info] RAG Ingestion CronJob started at $(date)"
+                  echo "[info] Downloading dataset from {{ .Values.ragIngestCron.datasetUrl }}"
+                  python3 -c "
+                  import urllib.request
+                  url = '{{ .Values.ragIngestCron.datasetUrl }}'
+                  urllib.request.urlretrieve(url, '/tmp/dataset.csv')
+                  print('[info] Downloaded dataset to /tmp/dataset.csv')
+                  "
+                  ROW_COUNT=$(wc -l < /tmp/dataset.csv)
+                  echo "[info] Dataset has $ROW_COUNT rows"
+                  echo "[info] Starting embedding generation..."
+                  python -m train.train_rag_assets \
+                    --input /tmp/dataset.csv \
+                    --model {{ .Values.ragIngestCron.model }} \
+                    --chunk-size {{ .Values.ragIngestCron.chunkSize }}
+                  echo "[done] Ingestion complete at $(date)"
               env:
+                {{- $db := .Values.env.DB | default dict }}
+                {{- if and $db.URL_SECRET $db.URL_KEY }}
                 - name: DATABASE_URL
                   valueFrom:
                     secretKeyRef:
-                      name: {{ include "dosm-insights.fullname" . }}-secret
-                      key: database-url
+                      name: {{ $db.URL_SECRET }}
+                      key: {{ $db.URL_KEY }}
+                {{- else }}
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "dosm-insights.fullname" . }}-config
+                      key: DATABASE_URL
+                {{- end }}
                 - name: EMBEDDING_MODEL_NAME
                   value: {{ .Values.ragIngestCron.model }}
-              volumeMounts:
-                - name: rag-dataset
-                  mountPath: {{ .Values.ragIngestCron.dataset.mountPath }}
-          volumes:
-            - name: rag-dataset
-              {{- if .Values.ragIngestCron.dataset.pvcName }}
-              persistentVolumeClaim:
-                claimName: {{ .Values.ragIngestCron.dataset.pvcName }}
-              {{- else }}
-              configMap:
-                name: {{ include "dosm-insights.fullname" . }}-rag-dataset-cron
-              {{- end }}
----
-{{- if and (not .Values.ragIngestCron.dataset.pvcName) .Values.ragIngestCron.dataset.inline }}
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "dosm-insights.fullname" . }}-rag-dataset-cron
-  labels:
-    app.kubernetes.io/name: {{ include "dosm-insights.name" . }}
-    app.kubernetes.io/component: rag-dataset-cron
-data:
-  {{ .Values.ragIngestCron.dataset.fileName }}: |
-{{ .Values.ragIngestCron.dataset.inline | indent 4 }}
-{{- end }}
+                - name: MODEL_VERSION
+                  value: "{{ .Values.env.MODEL_VERSION }}-cron-$(date +%Y%m%d)"
+              resources:
+                requests:
+                  memory: {{ .Values.ragIngestCron.resources.requests.memory | default "512Mi" }}
+                  cpu: {{ .Values.ragIngestCron.resources.requests.cpu | default "250m" }}
+                limits:
+                  memory: {{ .Values.ragIngestCron.resources.limits.memory | default "1Gi" }}
+                  cpu: {{ .Values.ragIngestCron.resources.limits.cpu | default "500m" }}
 {{- end }}
