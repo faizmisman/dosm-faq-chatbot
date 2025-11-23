@@ -56,6 +56,10 @@ ingress:
   className: nginx
   host: dosm-dev.example.com
 
+service:
+  port: 80
+  targetPort: 8000
+
 # RAG ingestion Job configuration (disabled by default)
 ragIngest:
   enabled: false

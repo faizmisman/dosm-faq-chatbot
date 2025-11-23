@@ -52,3 +52,22 @@ ingress:
   enabled: true
   className: nginx
   host: dosm.example.com
+
+service:
+  port: 80
+  targetPort: 8000
+
+# Flagger canary deployment configuration
+canary:
+  enabled: true
+  analysis:
+    interval: 1m          # How often to check metrics
+    threshold: 5          # Max failed checks before rollback
+    maxWeight: 50         # Max traffic % to canary (then promote)
+    stepWeight: 10        # Traffic increment per successful check (10% -> 20% -> 30%...)
+  metrics:
+    successRate:
+      min: 95             # Minimum 95% success rate (5% error threshold)
+    latency:
+      max: 1500           # Maximum 1500ms P95 latency
+  webhooks: []            # Add Slack/Teams webhooks for notifications
