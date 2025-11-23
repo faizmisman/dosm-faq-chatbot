@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rag-ingest-chunk50
+  namespace: dosm-dev
+spec:
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app: rag-ingest
+        experiment: chunk50
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: ingest
+        image: dosmfaqchatbotacr1lw5a.azurecr.io/dosm-faq-chatbot:93b8962
+        command:
+          - /bin/sh
+          - -c
+          - |
+            set -e
+            echo "[info] Downloading dataset from DOSM..."
+            python3 -c "import urllib.request; urllib.request.urlretrieve('https://storage.dosm.gov.my/labour/lfs_month_duration.csv', '/tmp/dataset.csv')"
+            echo "[info] Running ingestion with chunk_size=50..."
+            export PYTHONPATH=/app:$PYTHONPATH
+            python3 train/train_rag_assets.py --input /tmp/dataset.csv --chunk-size 50
+            echo "[done] Ingestion complete with chunk_size=50"
+        env:
+          - name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: dev-db-url
+                key: DATABASE_URL
+          - name: MODEL_VERSION
+            value: "dosm-rag-chunk50-experiment"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"

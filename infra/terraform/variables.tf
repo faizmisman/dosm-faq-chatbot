@@ -73,8 +73,8 @@ variable "api_key" {
 }
 variable "aks_dev_node_size" {
 	type    = string
-	# Using burstable B-series to stay under Dv2 quota; override if quota increased.
-	default = "Standard_B2s"
+	# Upgraded to D4s_v3 for better LLM model support (4 vCPU, 16GB RAM)
+	default = "Standard_D4s_v3"
 }
 variable "aks_dev_min_count" {
 	type    = number
@@ -83,13 +83,13 @@ variable "aks_dev_min_count" {
 }
 variable "aks_dev_max_count" {
 	type    = number
-	# Cap at 1 to avoid exceeding limited family quota; raise after quota increase.
-	default = 1
+	# Allow scaling to 2 nodes for high load periods
+	default = 2
 }
 variable "aks_prod_node_size" {
 	type    = string
-	# Adjust to minimum acceptable system pool SKU (2 cores) while watching quota.
-	default = "Standard_B2s"
+	# Upgraded to D4s_v3 for production workloads with better LLM model support
+	default = "Standard_D4s_v3"
 }
 variable "aks_prod_min_count" {
 	type    = number
@@ -98,8 +98,8 @@ variable "aks_prod_min_count" {
 }
 variable "aks_prod_max_count" {
 	type    = number
-	# Cap at 1 until quota increase; adjust later.
-	default = 1
+	# Allow scaling to 2 nodes for production high availability
+	default = 2
 }
 variable "tags" {
 	type    = map(string)

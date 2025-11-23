@@ -117,6 +117,7 @@ resource "azurerm_kubernetes_cluster" "aks_dev" {
     max_count            = var.aks_dev_max_count
     type                 = "VirtualMachineScaleSets"
     orchestrator_version = "1.32.9"
+    temporary_name_for_rotation = "systemtmp"
   }
 
   identity {
@@ -148,6 +149,7 @@ resource "azurerm_kubernetes_cluster" "aks_prod" {
     max_count            = var.aks_prod_max_count
     type                 = "VirtualMachineScaleSets"
     orchestrator_version = "1.32.9"
+    temporary_name_for_rotation = "systemtmp"
   }
 
   identity {
