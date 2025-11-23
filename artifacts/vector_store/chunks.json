@@ -1,0 +1,8 @@
+[
+  {
+    "id": "chunk_0_5",
+    "content": "year=2022 indicator=CPI value=118.4 notes=Consumer Price Index base 2015=100\nyear=2023 indicator=CPI value=121.0 notes=Moderate inflation increase\nyear=2023 indicator=UnemploymentRate value=3.5 notes=Percentage of labor force unemployed\nyear=2024 indicator=CPI value=123.2 notes=Projected CPI early estimate\nyear=2024 indicator=UnemploymentRate value=3.4 notes=Slight improvement year over year",
+    "start_row": 0,
+    "end_row": 4
+  }
+]

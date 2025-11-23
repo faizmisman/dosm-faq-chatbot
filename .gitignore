@@ -42,7 +42,6 @@ build/
 Thumbs.db
 *.swp
 
-# Large artifacts / evaluation results
-artifacts/
+# Evaluation results (exclude generated files, keep queries)
 eval/results*.json
 
