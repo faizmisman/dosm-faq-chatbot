@@ -210,35 +210,30 @@ with DAG(
     fetch_task = PythonOperator(
         task_id='fetch_data',
         python_callable=fetch_dosm_data,
-        provide_context=True,
     )
     
     # Task 2: Chunk data
     chunk_task = PythonOperator(
         task_id='chunk_data',
         python_callable=chunk_data,
-        provide_context=True,
     )
     
     # Task 3: Generate embeddings
     embed_task = PythonOperator(
         task_id='generate_embeddings',
         python_callable=generate_embeddings,
-        provide_context=True,
     )
     
     # Task 4: Validate embeddings
     validate_task = PythonOperator(
         task_id='validate_embeddings',
         python_callable=validate_embeddings,
-        provide_context=True,
     )
     
     # Task 5: Store embeddings
     store_task = PythonOperator(
         task_id='store_embeddings',
         python_callable=store_embeddings,
-        provide_context=True,
     )
     
     # Define task dependencies

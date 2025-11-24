@@ -33,13 +33,11 @@ with DAG(
     hello = PythonOperator(
         task_id='hello_world',
         python_callable=hello_world,
-        provide_context=True,
     )
     
     goodbye = PythonOperator(
         task_id='goodbye_world',
         python_callable=goodbye_world,
-        provide_context=True,
     )
     
     hello >> goodbye
