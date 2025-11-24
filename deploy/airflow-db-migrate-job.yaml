@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: airflow-db-migrate
+  namespace: airflow
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: airflow-db-migrate
+          image: apache/airflow:3.0.2
+          command:
+            - airflow
+            - db
+            - migrate
+          env:
+            - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
+              value: "postgresql://dosm_admin:Kusanagi%402105@pg-dosm.postgres.database.azure.com:5432/airflow_metadata?sslmode=require"
+            - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
+              value: "postgresql://dosm_admin:Kusanagi%402105@pg-dosm.postgres.database.azure.com:5432/airflow_metadata?sslmode=require"

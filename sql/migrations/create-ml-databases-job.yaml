@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-ml-databases
+  namespace: default
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: psql
+          image: postgres:15
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+              echo "Creating airflow_metadata database..."
+              psql "${DATABASE_URL}" -c "CREATE DATABASE airflow_metadata;" || echo "airflow_metadata may already exist"
+              
+              echo "Creating mlflow_tracking database..."
+              psql "${DATABASE_URL}" -c "CREATE DATABASE mlflow_tracking;" || echo "mlflow_tracking may already exist"
+              
+              echo "Listing all databases..."
+              psql "${DATABASE_URL}" -c "\l"
+              
+              echo "Done!"
+          env:
+            - name: DATABASE_URL
+              value: "postgresql://dosm_admin:Kusanagi%402105@pg-dosm.postgres.database.azure.com:5432/postgres?sslmode=require"

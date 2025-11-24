@@ -19,7 +19,11 @@ data:
     db: airflow_metadata
     sslmode: require
 
-# Airflow configuration
+# Disable init container migration wait (we run migrations separately)
+airflowPodAnnotations:
+  cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+
+# Increase migration check timeout
 config:
   core:
     dags_folder: /opt/airflow/dags
@@ -29,6 +33,8 @@ config:
     authenticate: false  # Simplify for dev; use OAuth/LDAP in prod
   scheduler:
     dag_dir_list_interval: 30  # Scan for new DAGs every 30s
+  database:
+    check_migrations_wait_timeout: 120  # Increase timeout to 120s
 
 # Resource limits (optimize for 8GB dev cluster)
 scheduler:
@@ -56,14 +62,11 @@ webserver:
 # Git-sync for DAGs (sync from your repo)
 dags:
   gitSync:
-    enabled: true
-    repo: https://github.com/faizmisman/dosm-faq-chatbot.git
-    branch: main
-    subPath: "airflow/dags"  # DAGs location in repo
-    wait: 60  # Sync every 60 seconds
-    maxFailures: 3
+    enabled: false  # Disabled for now, will copy DAGs manually
   persistence:
-    enabled: false  # Use git-sync instead of PVC
+    enabled: true
+    size: 1Gi
+    storageClassName: ""  # Use default storage class
 
 # Environment variables for DAG access to services
 env:
