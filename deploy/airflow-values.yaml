@@ -79,6 +79,7 @@ env:
 
 # Extra pip packages for DAGs
 extraPipPackages:
+  - "apache-airflow-providers-postgres==5.12.0"
   - "sentence-transformers==2.2.2"
   - "pandas==2.0.3"
   - "psycopg2-binary==2.9.9"
