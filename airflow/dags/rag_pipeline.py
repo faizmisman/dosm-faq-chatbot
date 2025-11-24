@@ -200,7 +200,7 @@ with DAG(
     'rag_pipeline',
     default_args=default_args,
     description='RAG pipeline: fetch → chunk → embed → validate → store',
-    schedule_interval='0 2 * * *',  # Daily at 02:00 MYT
+    schedule='0 2 * * *',  # Daily at 02:00 MYT
     start_date=datetime(2025, 11, 23),
     catchup=False,
     tags=['rag', 'embeddings', 'dosm'],
