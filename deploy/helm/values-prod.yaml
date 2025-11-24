@@ -51,7 +51,7 @@ secrets:
 ingress:
   enabled: true
   className: nginx
-  host: dosm.example.com
+  host: dosm-faq-prod.57.158.128.224.nip.io  # nip.io provides wildcard DNS for IP addresses
 
 service:
   port: 80

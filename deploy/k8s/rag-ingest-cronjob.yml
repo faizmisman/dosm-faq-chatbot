@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: rag-ingest
+  namespace: dosm-dev
+spec:
+  # Daily at 02:00 MYT (18:00 UTC previous day)
+  schedule: "0 18 * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app: rag-ingest
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: rag-ingest
+            image: dosmfaqchatbotacr1lw5a.azurecr.io/rag-ingest:latest
+            imagePullPolicy: Always
+            env:
+            - name: MLFLOW_TRACKING_URI
+              value: "http://mlflow.mlflow.svc.cluster.local:5000"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: database-secrets
+                  key: DATABASE_URL
+            resources:
+              requests:
+                memory: "512Mi"
+                cpu: "250m"
+              limits:
+                memory: "2Gi"
+                cpu: "1000m"
