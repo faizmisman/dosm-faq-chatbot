@@ -1,6 +1,13 @@
 # Airflow Helm Chart Configuration for RAG Pipeline
 # Lightweight setup for dev cluster (Standard_D2s_v3: 8GB RAM)
 
+# Use custom image with pre-installed packages
+images:
+  airflow:
+    repository: dosmfaqchatbotacr1lw5a.azurecr.io/airflow
+    tag: latest
+    pullPolicy: Always
+
 # Executor: Use LocalExecutor (simpler than CeleryExecutor, no Redis needed)
 executor: "LocalExecutor"
 
@@ -77,13 +84,8 @@ env:
   - name: MLFLOW_TRACKING_URI
     value: "http://mlflow.mlflow.svc.cluster.local:5000"
 
-# Extra pip packages for DAGs
-extraPipPackages:
-  - "apache-airflow-providers-postgres==5.12.0"
-  - "sentence-transformers==2.2.2"
-  - "pandas==2.0.3"
-  - "psycopg2-binary==2.9.9"
-  - "mlflow==2.9.2"
+# Note: Packages now baked into custom image (deploy/airflow.Dockerfile)
+# No need for extraPipPackages - they're pre-installed
 
 # Service accounts
 serviceAccount:

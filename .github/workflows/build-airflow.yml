@@ -1,0 +1,51 @@
+name: Build Airflow Image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'deploy/airflow.Dockerfile'
+      - 'airflow/**'
+      - '.github/workflows/build-airflow.yml'
+  workflow_dispatch:
+
+env:
+  REGISTRY: dosmfaqchatbotacr1lw5a.azurecr.io
+  IMAGE_NAME: airflow
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      
+      - name: Login to ACR
+        run: |
+          az acr login --name dosmfaqchatbotacr1lw5a
+      
+      - name: Build and push Airflow image
+        run: |
+          docker build -f deploy/airflow.Dockerfile -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest .
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          
+          # Also tag with commit SHA
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+      
+      - name: Image details
+        run: |
+          echo "Airflow image pushed:"
+          echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
