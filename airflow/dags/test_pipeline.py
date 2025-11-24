@@ -56,11 +56,13 @@ with DAG(
     task1 = PythonOperator(
         task_id='test_task_1',
         python_callable=test_task_1,
+        provide_context=True,
     )
     
     task2 = PythonOperator(
         task_id='test_task_2',
         python_callable=test_task_2,
+        provide_context=True,
     )
     
     task1 >> task2
