@@ -4,9 +4,11 @@
 
 **Production API Endpoint**: `http://dosm-faq-prod.57.158.128.224.nip.io`
 
-**API Key**: `DosmProdApi2025!`
+**API Key**: `DosmProdApi2025!` (stored in GitHub Secrets as `PROD_API_KEY`)
 
 **Status**: ✅ Live and accessible from anywhere
+
+**Note**: API key is automatically injected from GitHub Secrets during CI/CD deployment. Flagger manages the canary deployment with `-primary` suffix for stable pods.
 
 **Monitoring Dashboard**: `http://monitoring.57.158.128.224.nip.io`
 - **Username**: `admin`
