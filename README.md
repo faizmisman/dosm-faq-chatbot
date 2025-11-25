@@ -35,7 +35,7 @@ kubectl port-forward svc/faq-chatbot-dosm-insights 8000:80 -n dosm-dev &
 # 4. Test query
 curl -X POST http://localhost:8000/predict \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: dev-api-key" \
+  -H "X-API-Key: <YOUR-DEV-API-KEY>" \
   -d '{"query":"What is the unemployment rate in 2023?"}'
 
 # Expected response:
@@ -62,7 +62,7 @@ kubectl get svc -n ingress-nginx  # External IP: 57.158.128.224
 # 3. Test via public endpoint (no port-forward needed!)
 curl -X POST http://dosm-faq-prod.57.158.128.224.nip.io/predict \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: prod-placeholder" \
+  -H "X-API-Key: <YOUR-PROD-API-KEY>" \
   -d '{"query":"employment statistics 2024"}'
 
 # Health check
@@ -72,7 +72,7 @@ curl http://dosm-faq-prod.57.158.128.224.nip.io/health
 curl -X POST http://57.158.128.224/predict \
   -H "Content-Type: application/json" \
   -H "Host: dosm-faq-prod.57.158.128.224.nip.io" \
-  -H "X-API-Key: prod-placeholder" \
+  -H "X-API-Key: <YOUR-PROD-API-KEY>" \
   -d '{"query":"employment statistics 2024"}'
 
 # Note: Using nip.io for DNS (maps *.57.158.128.224.nip.io → 57.158.128.224)
@@ -89,7 +89,7 @@ open http://20.6.121.120:5000
 # Check latest run: 117 rows → 5 chunks → 5 embeddings
 
 # 3. Verify database embeddings
-PGPASSWORD='Kusanagi@2105' psql \
+PGPASSWORD='<YOUR-DB-PASSWORD>' psql \
   -h pg-dosm.postgres.database.azure.com \
   -U dosm_admin \
   -d dosm-faq-chatbot-dev-postgres \
@@ -110,7 +110,7 @@ kubectl port-forward svc/faq-chatbot-dosm-insights 8000:80 -n dosm-dev &
 # 2. Run unemployment queries test
 python3 scripts/run_eval_remote.py \
   http://localhost:8000/predict \
-  dev-api-key \
+  <YOUR-DEV-API-KEY> \
   eval/queries_unemployment.jsonl \
   --out eval/results_test.json
 
@@ -250,7 +250,7 @@ with open('eval/results_test.json') as f:
 ```bash
 curl -X POST http://localhost:8000/predict \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: dev-api-key" \
+  -H "X-API-Key: <YOUR-DEV-API-KEY>" \
   -d '{
     "query": "What is the unemployment rate in Selangor for 2023?"
   }'
@@ -267,7 +267,7 @@ curl -X POST http://localhost:8000/predict \
 ```bash
 curl -X POST http://localhost:8000/predict \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: dev-api-key" \
+  -H "X-API-Key: <YOUR-DEV-API-KEY>" \
   -d '{
     "query": "unemployment"
   }'
@@ -299,7 +299,7 @@ curl -X POST http://localhost:8000/predict \
 for i in {1..10}; do
   time curl -X POST http://localhost:8000/predict \
     -H "Content-Type: application/json" \
-    -H "X-API-Key: dev-api-key" \
+    -H "X-API-Key: <YOUR-DEV-API-KEY>" \
     -d '{"query":"unemployment 2023"}' \
     -w "\nTime: %{time_total}s\n"
 done
@@ -323,7 +323,7 @@ sleep 30  # Wait for pods to start
 
 ```bash
 # Using Apache Bench
-ab -n 100 -c 10 -T 'application/json' -H 'X-API-Key: dev-api-key' \
+ab -n 100 -c 10 -T 'application/json' -H 'X-API-Key: <YOUR-DEV-API-KEY>' \
   -p <(echo '{"query":"unemployment 2023"}') \
   http://localhost:8000/predict
 ```
@@ -394,7 +394,7 @@ curl -s 'http://20.6.121.120:5000/api/2.0/mlflow/runs/search' \
 
 ```bash
 # Connect to database
-PGPASSWORD='Kusanagi@2105' psql \
+PGPASSWORD='<YOUR-DB-PASSWORD>' psql \
   -h pg-dosm.postgres.database.azure.com \
   -U dosm_admin \
   -d dosm-faq-chatbot-dev-postgres
@@ -447,7 +447,7 @@ kubectl rollout status deployment/faq-chatbot-dosm-insights -n dosm-dev
 
 # 4. Run smoke tests
 kubectl port-forward svc/faq-chatbot-dosm-insights 8000:80 -n dosm-dev &
-python3 scripts/smoke_test.py http://localhost:8000 dev-api-key
+python3 scripts/smoke_test.py http://localhost:8000 <YOUR-DEV-API-KEY>
 ```
 
 ### Production Deployment (via GitHub Actions)
@@ -514,14 +514,14 @@ curl http://20.6.121.120:5000/api/2.0/mlflow/experiments/list | jq
 ### Database Health
 ```bash
 # Connection test
-PGPASSWORD='Kusanagi@2105' psql \
+PGPASSWORD='<YOUR-DB-PASSWORD>' psql \
   -h pg-dosm.postgres.database.azure.com \
   -U dosm_admin \
   -d dosm-faq-chatbot-dev-postgres \
   -c "SELECT version();"
 
 # Check embeddings freshness
-PGPASSWORD='Kusanagi@2105' psql \
+PGPASSWORD='<YOUR-DB-PASSWORD>' psql \
   -h pg-dosm.postgres.database.azure.com \
   -U dosm_admin \
   -d dosm-faq-chatbot-dev-postgres \
@@ -573,7 +573,7 @@ kubectl describe job -n dosm-dev rag-ingest-<timestamp>
 # Recreate secret with correct URL encoding
 kubectl delete secret database-secrets -n dosm-dev
 kubectl create secret generic database-secrets -n dosm-dev \
-  --from-literal=DATABASE_URL='postgresql://dosm_admin:Kusanagi%402105@pg-dosm.postgres.database.azure.com:5432/dosm-faq-chatbot-dev-postgres?sslmode=require'
+  --from-literal=DATABASE_URL='postgresql://dosm_admin:<URL-ENCODED-PASSWORD>@pg-dosm.postgres.database.azure.com:5432/dosm-faq-chatbot-dev-postgres?sslmode=require'
 
 # Restart MLflow if needed
 kubectl rollout restart deployment/mlflow -n mlflow
@@ -588,7 +588,7 @@ kubectl rollout restart deployment/mlflow -n mlflow
 # Check query results in detail
 python3 scripts/run_eval_remote.py \
   http://localhost:8000/predict \
-  dev-api-key \
+  <YOUR-DEV-API-KEY> \
   eval/queries_unemployment.jsonl \
   --out eval/debug_results.json
 
@@ -766,7 +766,7 @@ Include:
 
 ### API Authentication
 - Required: `X-API-Key` header
-- Dev key: `dev-api-key`
+- Dev key: `<YOUR-DEV-API-KEY>`
 - Prod key: Managed via Azure Key Vault (not in repo)
 
 ### Database Access

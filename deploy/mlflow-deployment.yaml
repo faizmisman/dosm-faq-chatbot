@@ -4,7 +4,7 @@ metadata:
   name: mlflow-config
   namespace: mlflow
 data:
-  MLFLOW_BACKEND_STORE_URI: "postgresql://dosm_admin:Kusanagi%402105@pg-dosm.postgres.database.azure.com:5432/mlflow_tracking?sslmode=require"
+  MLFLOW_BACKEND_STORE_URI: "postgresql://dosm_admin:<URL-ENCODED-PASSWORD>@pg-dosm.postgres.database.azure.com:5432/mlflow_tracking?sslmode=require"
   MLFLOW_DEFAULT_ARTIFACT_ROOT: "/mlruns"
 ---
 apiVersion: apps/v1

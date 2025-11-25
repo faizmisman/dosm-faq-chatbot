@@ -17,6 +17,6 @@ spec:
             - migrate
           env:
             - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
-              value: "postgresql://dosm_admin:Kusanagi%402105@pg-dosm.postgres.database.azure.com:5432/airflow_metadata?sslmode=require"
+              value: "postgresql://dosm_admin:<URL-ENCODED-PASSWORD>@pg-dosm.postgres.database.azure.com:5432/airflow_metadata?sslmode=require"
             - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
-              value: "postgresql://dosm_admin:Kusanagi%402105@pg-dosm.postgres.database.azure.com:5432/airflow_metadata?sslmode=require"
+              value: "postgresql://dosm_admin:<URL-ENCODED-PASSWORD>@pg-dosm.postgres.database.azure.com:5432/airflow_metadata?sslmode=require"

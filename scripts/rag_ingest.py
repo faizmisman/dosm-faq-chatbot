@@ -16,7 +16,7 @@ from psycopg2.extras import Json
 
 # Configuration
 MLFLOW_TRACKING_URI = os.getenv('MLFLOW_TRACKING_URI', 'http://mlflow.mlflow.svc.cluster.local:5000')
-DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://dosm_admin:Kusanagi@2105@pg-dosm.postgres.database.azure.com:5432/dosm-faq-chatbot-dev-postgres?sslmode=require')
+DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://dosm_admin:<YOUR-DB-PASSWORD>@pg-dosm.postgres.database.azure.com:5432/dosm-faq-chatbot-dev-postgres?sslmode=require')
 DOSM_DATA_URL = "https://storage.dosm.gov.my/labour/lfs_month_duration.csv"
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 CHUNK_SIZE = 25

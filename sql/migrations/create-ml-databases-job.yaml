@@ -28,4 +28,4 @@ spec:
               echo "Done!"
           env:
             - name: DATABASE_URL
-              value: "postgresql://dosm_admin:Kusanagi%402105@pg-dosm.postgres.database.azure.com:5432/postgres?sslmode=require"
+              value: "postgresql://dosm_admin:<URL-ENCODED-PASSWORD>@pg-dosm.postgres.database.azure.com:5432/postgres?sslmode=require"

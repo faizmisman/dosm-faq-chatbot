@@ -19,7 +19,7 @@ postgresql:
 data:
   metadataConnection:
     user: dosm_admin
-    pass: "Kusanagi@2105"
+    pass: "<YOUR-DB-PASSWORD>"
     protocol: postgresql
     host: pg-dosm.postgres.database.azure.com
     port: 5432

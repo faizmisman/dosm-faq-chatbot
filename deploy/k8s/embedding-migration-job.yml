@@ -36,7 +36,7 @@ spec:
                 --skip-confirmation
           env:
             - name: DEV_DATABASE_URL
-              value: "postgresql://dosm_admin:Kusanagi%402105@pg-dosm.postgres.database.azure.com:5432/dosm-faq-chatbot-dev-postgres?sslmode=require"
+              value: "postgresql://dosm_admin:<URL-ENCODED-PASSWORD>@pg-dosm.postgres.database.azure.com:5432/dosm-faq-chatbot-dev-postgres?sslmode=require"
             - name: PROD_DATABASE_URL
               valueFrom:
                 secretKeyRef:
