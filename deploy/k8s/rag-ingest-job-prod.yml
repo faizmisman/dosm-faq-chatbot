@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rag-ingest-prod
+  namespace: dosm-prod
+  labels:
+    app: rag-ingest
+    environment: prod
+spec:
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: rag-ingest
+        environment: prod
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: rag-ingest
+        image: dosmfaqchatbotacr1lw5a.azurecr.io/rag-ingest:latest
+        imagePullPolicy: Always
+        env:
+        - name: MLFLOW_TRACKING_URI
+          value: "http://mlflow.mlflow.svc.cluster.local:5000"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: database-secrets
+              key: DATABASE_URL
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"

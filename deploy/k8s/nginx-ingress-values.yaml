@@ -1,0 +1,88 @@
+# NGINX Ingress Controller Configuration for Production
+# Installed via Helm: ingress-nginx/ingress-nginx
+# Namespace: ingress-nginx
+
+# Installation command:
+# helm install ingress-nginx ingress-nginx/ingress-nginx \
+#   --namespace ingress-nginx \
+#   --create-namespace \
+#   --values deploy/k8s/nginx-ingress-values.yaml \
+#   --wait --timeout=5m
+
+# Upgrade command:
+# helm upgrade ingress-nginx ingress-nginx/ingress-nginx \
+#   --namespace ingress-nginx \
+#   --values deploy/k8s/nginx-ingress-values.yaml \
+#   --wait --timeout=5m
+
+# Uninstall command:
+# helm uninstall ingress-nginx -n ingress-nginx
+# kubectl delete namespace ingress-nginx
+
+controller:
+  # Service configuration
+  service:
+    type: LoadBalancer
+    externalTrafficPolicy: Local  # Better for preserving client IPs
+    annotations:
+      # Reuse existing public IP from AKS cluster
+      service.beta.kubernetes.io/azure-load-balancer-resource-group: "mc_dosm-faq-chatbot-prod-rg_dosm-faq-chatbot-prod-aks_southeastasia"
+      service.beta.kubernetes.io/azure-pip-name: "kubernetes-aa6aa929cf0a8499c9f9c213dece98a3"
+  
+  # Resource limits (minimal for small cluster)
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  
+  # Enable Prometheus metrics
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: false  # Enable if Prometheus Operator is installed
+  
+  # Autoscaling (optional - disabled for minimal setup)
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+  
+  # Configuration options
+  config:
+    # Increase body size for file uploads
+    proxy-body-size: "4m"
+    # Add custom headers
+    use-forwarded-headers: "true"
+    compute-full-forwarded-for: "true"
+    use-proxy-protocol: "false"
+  
+  # Admission webhooks (enabled by default)
+  admissionWebhooks:
+    enabled: true
+    failurePolicy: Fail
+    port: 8443
+    
+# Default backend (optional 404 page)
+defaultBackend:
+  enabled: false
+
+# RBAC
+rbac:
+  create: true
+
+# Service Account
+serviceAccount:
+  create: true
+  name: ingress-nginx
+
+# Notes:
+# - LoadBalancer IP: 57.158.128.224 (auto-assigned from existing Azure public IP)
+# - Access: http://dosm-faq-prod.57.158.128.224.nip.io
+# - nip.io provides wildcard DNS without needing to configure Azure DNS
+# - For production with real domain, update ingress.host in values-prod.yaml
+# - The ingress controller will automatically watch for Ingress resources in all namespaces
+# - SSL/TLS can be added via cert-manager for HTTPS support

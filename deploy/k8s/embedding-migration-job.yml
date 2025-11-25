@@ -1,0 +1,71 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: embedding-migration
+  namespace: dosm-prod
+  labels:
+    app: embedding-migration
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app: embedding-migration
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrator
+          image: dosmfaqchatbotacr1lw5a.azurecr.io/rag-ingest:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              echo "=================================================="
+              echo "Embedding Migration: Dev → Prod"
+              echo "=================================================="
+              
+              # Install psycopg2
+              pip install psycopg2-binary -q
+              
+              # Run migration script (skip confirmation for automated execution)
+              python /app/migrate_embeddings_dev_to_prod.py \
+                --source-url "$DEV_DATABASE_URL" \
+                --target-url "$PROD_DATABASE_URL" \
+                --batch-size 100 \
+                --skip-confirmation
+          env:
+            - name: DEV_DATABASE_URL
+              value: "postgresql://dosm_admin:Kusanagi%402105@pg-dosm.postgres.database.azure.com:5432/dosm-faq-chatbot-dev-postgres?sslmode=require"
+            - name: PROD_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: database-secrets
+                  key: DATABASE_URL
+          volumeMounts:
+            - name: migration-script
+              mountPath: /app
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      volumes:
+        - name: migration-script
+          configMap:
+            name: embedding-migration-script
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: embedding-migration-script
+  namespace: dosm-prod
+binaryData: {}
+# Note: To create/update this ConfigMap with the actual script, run:
+# kubectl create configmap embedding-migration-script -n dosm-prod \
+#   --from-file=migrate_embeddings_dev_to_prod.py=scripts/migrate_embeddings_dev_to_prod.py \
+#   --dry-run=client -o yaml | kubectl apply -f -
+
+

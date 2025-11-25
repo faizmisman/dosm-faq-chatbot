@@ -1,0 +1,212 @@
+name: Migrate Embeddings Dev to Prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (preview only, no changes)'
+        required: false
+        default: false
+        type: boolean
+      batch_size:
+        description: 'Batch size for migration'
+        required: false
+        default: '100'
+        type: string
+      clear_target:
+        description: 'Clear prod embeddings before migration'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  migrate-embeddings:
+    runs-on: ubuntu-latest
+    environment: prod
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set AKS context (prod)
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: dosm-faq-chatbot-prod-rg
+          cluster-name: dosm-faq-chatbot-prod-aks
+
+      - name: Generate job name
+        id: job-name
+        run: |
+          TIMESTAMP=$(date +%s)
+          JOB_NAME="embedding-migration-${TIMESTAMP}"
+          echo "job_name=${JOB_NAME}" >> $GITHUB_OUTPUT
+          echo "Generated job name: ${JOB_NAME}"
+
+      - name: Create migration job
+        run: |
+          cat <<EOF | kubectl apply -f -
+          apiVersion: batch/v1
+          Kind: Job
+          metadata:
+            name: ${{ steps.job-name.outputs.job_name }}
+            namespace: dosm-prod
+            labels:
+              app: embedding-migration
+              triggered-by: github-actions
+          spec:
+            backoffLimit: 1
+            template:
+              metadata:
+                labels:
+                  app: embedding-migration
+              spec:
+                restartPolicy: Never
+                containers:
+                - name: migrator
+                  image: dosmfaqchatbotacr1lw5a.azurecr.io/rag-ingest:latest
+                  command:
+                    - /bin/sh
+                    - -c
+                    - |
+                      set -e
+                      echo "=================================================="
+                      echo "Embedding Migration: Dev → Prod"
+                      echo "Dry Run: ${{ inputs.dry_run }}"
+                      echo "Batch Size: ${{ inputs.batch_size }}"
+                      echo "Clear Target: ${{ inputs.clear_target }}"
+                      echo "=================================================="
+                      
+                      # Install psycopg2
+                      pip install psycopg2-binary -q
+                      
+                      # Build migration command
+                      CMD="python /app/migrate_embeddings.py --source-url \"\$DEV_DATABASE_URL\" --target-url \"\$PROD_DATABASE_URL\" --batch-size ${{ inputs.batch_size }}"
+                      
+                      if [ "${{ inputs.dry_run }}" = "true" ]; then
+                        CMD="\$CMD --dry-run"
+                      fi
+                      
+                      if [ "${{ inputs.clear_target }}" = "false" ]; then
+                        CMD="\$CMD --no-clear"
+                      fi
+                      
+                      echo "Running: \$CMD"
+                      eval \$CMD
+                  env:
+                    - name: DEV_DATABASE_URL
+                      value: "postgresql://dosm_admin:Kusanagi%402105@pg-dosm.postgres.database.azure.com:5432/dosm-faq-chatbot-dev-postgres?sslmode=require"
+                    - name: PROD_DATABASE_URL
+                      valueFrom:
+                        secretKeyRef:
+                          name: database-secrets
+                          key: DATABASE_URL
+                  volumeMounts:
+                    - name: migration-script
+                      mountPath: /app
+                  resources:
+                    requests:
+                      memory: "256Mi"
+                      cpu: "100m"
+                    limits:
+                      memory: "512Mi"
+                      cpu: "500m"
+                volumes:
+                  - name: migration-script
+                    configMap:
+                      name: embedding-migration-script
+          EOF
+
+      - name: Ensure migration script ConfigMap exists
+        run: |
+          kubectl get configmap embedding-migration-script -n dosm-prod || \
+          kubectl create configmap embedding-migration-script -n dosm-prod \
+            --from-file=migrate_embeddings.py=scripts/migrate_embeddings_dev_to_prod.py
+
+      - name: Wait for job to start
+        run: |
+          echo "Waiting for job to be created..."
+          sleep 5
+          kubectl wait --for=condition=ready pod \
+            -l job-name=${{ steps.job-name.outputs.job_name }} \
+            -n dosm-prod \
+            --timeout=120s || true
+
+      - name: Follow migration logs
+        run: |
+          echo "Following migration logs..."
+          kubectl logs -f -l job-name=${{ steps.job-name.outputs.job_name }} \
+            -n dosm-prod \
+            --tail=-1 || true
+
+      - name: Check job completion
+        run: |
+          echo "Checking job status..."
+          kubectl wait --for=condition=complete \
+            job/${{ steps.job-name.outputs.job_name }} \
+            -n dosm-prod \
+            --timeout=600s || {
+              echo "❌ Job failed or timed out"
+              kubectl describe job ${{ steps.job-name.outputs.job_name }} -n dosm-prod
+              exit 1
+            }
+          
+          echo "✅ Migration completed successfully!"
+
+      - name: Verify migration
+        if: ${{ inputs.dry_run == false }}
+        run: |
+          echo "Verifying migration..."
+          
+          # Get prod API pod
+          POD_NAME=$(kubectl get pods -n dosm-prod -l app=faq-chatbot-dosm-insights -o jsonpath='{.items[0].metadata.name}')
+          
+          echo "Testing prod API with migrated embeddings..."
+          kubectl exec -n dosm-prod $POD_NAME -- wget -qO- --header="Content-Type: application/json" --header="X-API-Key: prod-placeholder" --post-data='{"query":"What is the unemployment rate?"}' http://localhost:8000/predict | jq .
+
+      - name: Cleanup old migration jobs
+        if: always()
+        run: |
+          echo "Cleaning up old migration jobs (keeping last 3)..."
+          kubectl get jobs -n dosm-prod -l app=embedding-migration --sort-by=.metadata.creationTimestamp -o name | head -n -3 | xargs -r kubectl delete -n dosm-prod || true
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Embedding Migration Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Job Name**: ${{ steps.job-name.outputs.job_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered By**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dry Run**: ${{ inputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Batch Size**: ${{ inputs.batch_size }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Clear Target**: ${{ inputs.clear_target }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: $(kubectl get job ${{ steps.job-name.outputs.job_name }} -n dosm-prod -o jsonpath='{.status.conditions[0].type}' 2>/dev/null || echo 'Unknown')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Migration Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Source**: Dev database (dosm-faq-chatbot-dev-postgres)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target**: Prod database (dosm-faq-chatbot-prod-postgres)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Action**: Copy embeddings from dev to prod (UAT-validated data)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Prod API" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo 'curl -X POST http://57.158.128.224/predict \' >> $GITHUB_STEP_SUMMARY
+          echo '  -H "Content-Type: application/json" \' >> $GITHUB_STEP_SUMMARY
+          echo '  -H "X-API-Key: prod-placeholder" \' >> $GITHUB_STEP_SUMMARY
+          echo '  -d '"'"'{"query":"What is the unemployment rate in Malaysia?"}'"'"'' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Commands" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "# View full migration logs" >> $GITHUB_STEP_SUMMARY
+          echo "kubectl logs job/${{ steps.job-name.outputs.job_name }} -n dosm-prod" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Verify embedding count in prod" >> $GITHUB_STEP_SUMMARY
+          echo "kubectl exec -n dosm-prod deployment/faq-chatbot-dosm-insights-primary -- sh -c 'apk add postgresql-client && psql \$DATABASE_URL -c \"SELECT COUNT(*) FROM embeddings;\"'" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Delete migration job after review" >> $GITHUB_STEP_SUMMARY
+          echo "kubectl delete job ${{ steps.job-name.outputs.job_name }} -n dosm-prod" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
