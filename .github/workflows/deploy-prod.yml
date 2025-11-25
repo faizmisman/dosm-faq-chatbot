@@ -87,6 +87,13 @@ jobs:
             --namespace dosm-prod \
             --dry-run=client -o yaml | kubectl apply -f -
 
+      - name: Create API key secret
+        run: |
+          kubectl create secret generic prod-api-key \
+            --from-literal=PROD_API_KEY="${{ secrets.PROD_API_KEY }}" \
+            --namespace dosm-prod \
+            --dry-run=client -o yaml | kubectl apply -f -
+
       - name: Helm upgrade (Prod)
         run: |
           IMAGE_TAG=${{ steps.meta.outputs.IMAGE_TAG }}

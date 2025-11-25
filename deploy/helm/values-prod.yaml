@@ -17,6 +17,8 @@ env:
   LOG_LEVEL: INFO
   # API_KEY and DATABASE_URL provided via secrets when enabled
   MODEL_VERSION: "dosm-rag-prod"
+  API_KEY_SECRET: prod-api-key
+  API_KEY_KEY: PROD_API_KEY
   DB:
     URL_SECRET: prod-db-url
     URL_KEY: DATABASE_URL
@@ -43,9 +45,8 @@ prometheus:
   path: /metrics
 
 secrets:
-  enabled: true
-  apiKey: prod-placeholder  # Replace via external secret management
-  # databaseUrl removed - provided via external secret 'prod-db-url'
+  enabled: false  # Using external secrets (prod-api-key, prod-db-url)
+  apiKey: ""
   databaseUrl: ""
 
 ingress:
