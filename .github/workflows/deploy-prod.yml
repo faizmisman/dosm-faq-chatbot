@@ -93,6 +93,12 @@ jobs:
             --from-literal=PROD_API_KEY="${{ secrets.PROD_API_KEY }}" \
             --namespace dosm-prod \
             --dry-run=client -o yaml | kubectl apply -f -
+          
+          # Also update Flagger-managed primary secret if it exists
+          if kubectl get secret faq-chatbot-dosm-insights-config-primary -n dosm-prod 2>/dev/null; then
+            kubectl patch secret faq-chatbot-dosm-insights-config-primary -n dosm-prod \
+              -p "{\"stringData\":{\"API_KEY\":\"${{ secrets.PROD_API_KEY }}\"}}"
+          fi
 
       - name: Helm upgrade (Prod)
         run: |
