@@ -1,0 +1,148 @@
+# Centralized monitoring stack for dev & prod clusters
+# Deploy this in dev cluster with public access via LoadBalancer
+
+prometheus:
+  prometheusSpec:
+    # Allow ServiceMonitors from all namespaces
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    
+    # Retain metrics for 30 days
+    retention: 30d
+    
+    # Storage for metrics
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 20Gi
+    
+    # Resources (minimal for 8GB node)
+    resources:
+      requests:
+        cpu: 200m
+        memory: 1Gi
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+    
+    # Additional scrape configs for remote clusters
+    additionalScrapeConfigs:
+      # Scrape prod cluster metrics via federation
+      - job_name: 'prod-cluster-federation'
+        honor_labels: true
+        metrics_path: '/federate'
+        params:
+          'match[]':
+            - '{job=~".+"}'
+        static_configs:
+          - targets:
+              - 'prometheus-prod.dosm-prod.svc.cluster.local:9090'
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: cluster
+            replacement: 'prod'
+
+  # Expose Prometheus with ClusterIP (use ingress for public access)
+  service:
+    type: ClusterIP
+    port: 9090
+
+grafana:
+  # Admin credentials
+  adminPassword: "DosmInsights2025!"
+  
+  # Expose Grafana with ClusterIP (use ingress for public access)
+  service:
+    type: ClusterIP
+    port: 80
+  
+  # Resources (minimal)
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  
+  # Persistence for dashboards
+  persistence:
+    enabled: true
+    size: 10Gi
+    accessModes:
+      - ReadWriteOnce
+  
+  # Additional data sources (prod cluster)
+  additionalDataSources:
+    - name: Prometheus-Prod
+      type: prometheus
+      url: http://kube-prometheus-stack-prometheus.monitoring:9090
+      access: proxy
+      isDefault: false
+      jsonData:
+        timeInterval: 30s
+  
+  # Pre-configure dashboards
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'default'
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+  
+  # Dashboard configmaps
+  dashboards:
+    default:
+      dosm-insights:
+        file: dashboards/dosm_insights_dashboard.json
+
+  # Grafana configuration
+  grafana.ini:
+    server:
+      root_url: "http://%(domain)s"
+      serve_from_sub_path: false
+    auth.anonymous:
+      enabled: true
+      org_role: Viewer
+    security:
+      allow_embedding: true
+
+# Alertmanager configuration
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+  
+  service:
+    type: ClusterIP
+
+# Disable components we don't need
+kubeStateMetrics:
+  enabled: true
+
+nodeExporter:
+  enabled: true
+
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi

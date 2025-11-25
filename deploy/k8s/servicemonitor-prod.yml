@@ -1,0 +1,26 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: faq-chatbot-metrics-prod
+  namespace: dosm-prod
+  labels:
+    app: faq-chatbot-dosm-insights
+    release: kube-prometheus-stack
+    environment: prod
+spec:
+  selector:
+    matchLabels:
+      app: faq-chatbot-dosm-insights
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      relabelings:
+        - sourceLabels: [__address__]
+          targetLabel: cluster
+          replacement: prod
+        - sourceLabels: [__meta_kubernetes_namespace]
+          targetLabel: namespace
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          targetLabel: pod
