@@ -8,6 +8,13 @@
 
 **Status**: ✅ Live and accessible from anywhere
 
+**Monitoring Dashboard**: `http://monitoring.57.158.128.224.nip.io`
+- **Username**: `admin`
+- **Password**: `DosmInsights2025!`
+- **Viewer Access**: Anonymous (view-only without login)
+- **Metrics**: RPS, p95 latency, error rate, RAG decisions, memory/CPU
+- **Clusters**: Dev + Prod metrics in single dashboard
+
 ---
 
 ## Test the API
@@ -238,12 +245,23 @@ print(response.json())
 
 ## Changelog
 
+### 2025-01-XX (Latest)
+- ✅ Centralized monitoring deployed (Prometheus + Grafana)
+- ✅ Public monitoring dashboard: http://monitoring.57.158.128.224.nip.io
+- ✅ Credentials: admin / DosmInsights2025!
+- ✅ Anonymous viewer access enabled
+- ✅ Dev + Prod metrics in single dashboard
+- ✅ 5 alert rules configured (error rate, latency, pod health)
+- ✅ ServiceMonitors for both clusters
+- ✅ 30-day metric retention
+- ✅ Horizontal Pod Autoscaler active (2-10 replicas)
+
 ### 2025-11-25
 - ✅ Production ingress configured with NGINX
 - ✅ Public LoadBalancer IP: 57.158.128.224
 - ✅ nip.io DNS for easy access
 - ✅ API endpoint live and tested
-- ⚠️ Vector store pending data ingestion
+- ✅ Vector store embeddings loaded
 
 ---
 
@@ -252,12 +270,15 @@ print(response.json())
 ### For Testers
 1. Test various query types (employment, economic data, clarifications)
 2. Measure response times and accuracy
-3. Report any unexpected behaviors or errors
-4. Try edge cases (very long queries, special characters, etc.)
+3. Monitor real-time metrics in Grafana dashboard
+4. Import custom dashboard: `dashboards/grafana/dosm_insights_dashboard.json`
+5. Report any unexpected behaviors or errors
+6. Try edge cases (very long queries, special characters, etc.)
 
 ### For Developers
 1. Custom domain setup (replace nip.io)
 2. SSL/TLS certificate (Let's Encrypt)
-3. Rate limiting configuration
-4. Enhanced monitoring and logging
-5. Load embeddings into vector store
+3. Enhanced rate limiting configuration
+4. Private endpoint for database (Azure Private Link)
+5. Automated credential rotation
+6. A/B testing framework for model improvements

@@ -79,6 +79,33 @@ curl -X POST http://57.158.128.224/predict \
 # For custom domain, update DNS A record and deploy/helm/values-prod.yaml
 ```
 
+### Monitor Production (Grafana & Prometheus)
+```bash
+# Public Grafana Dashboard (view metrics for dev & prod)
+# URL: http://monitoring.57.158.128.224.nip.io
+# Username: admin
+# Password: DosmInsights2025!
+
+# Features:
+# - RPS (requests per second)
+# - p95 latency
+# - Error rate (5xx)
+# - RAG decisions (answer/clarify/refuse)
+# - Memory & CPU usage
+# - Both dev & prod clusters in one dashboard
+
+# Public Prometheus (raw metrics)
+# URL: http://monitoring.57.158.128.224.nip.io/prometheus
+
+# Check specific metrics:
+# - http_requests_total
+# - http_request_latency_ms_bucket
+# - rag_decisions_total{decision="answer"}
+
+# Open in browser
+open http://monitoring.57.158.128.224.nip.io
+```
+
 ### Test ML Pipeline
 ```bash
 # 1. Check MLflow UI
@@ -653,6 +680,103 @@ kubectl patch canary faq-chatbot-dosm-insights -n dosm-prod \
 # Rollback canary
 kubectl rollout undo deployment/faq-chatbot-dosm-insights-primary -n dosm-prod
 ```
+
+---
+
+## 📊 Project Checklist
+
+### ✅ Completed Features
+
+**Phase P1-P3: Core RAG Pipeline**
+- [x] Data ingestion from DOSM portal
+- [x] Text chunking (25 rows per chunk)
+- [x] Embedding generation (MiniLM-L6-v2)
+- [x] Vector storage (pgvector/PostgreSQL)
+- [x] HNSW index for fast similarity search
+- [x] FastAPI /predict endpoint
+- [x] Citation extraction & formatting
+- [x] Confidence scoring & thresholds
+
+**Phase P4: Automation & ML Pipeline**
+- [x] Standalone rag_ingest.py script
+- [x] MLflow experiment tracking (http://20.6.121.120:5000)
+- [x] CronJob daily at 02:00 MYT
+- [x] Automatic model versioning
+- [x] Database migration scripts
+
+**Phase P5: Quality Tuning**
+- [x] Chunk size optimization (25 rows)
+- [x] Confidence calibration (threshold: 0.25)
+- [x] 90% hit rate achieved
+- [x] 197ms p95 latency (warm)
+- [x] 0% error rate
+- [x] Infrastructure upgrade (D2s_v3 8GB dev, E2s_v3 16GB prod)
+
+**Production Infrastructure**
+- [x] Dual-cluster deployment (dev/prod)
+- [x] Kubernetes Helm charts
+- [x] Ingress with public IP (57.158.128.224)
+- [x] Flagger canary deployments
+- [x] Horizontal Pod Autoscaler (HPA)
+- [x] PostgreSQL with pgvector extension
+- [x] GitHub Actions CI/CD pipelines
+- [x] Embedding migration system (dev→prod)
+
+**Monitoring & Observability**
+- [x] Centralized Prometheus + Grafana
+- [x] Public monitoring dashboard (http://monitoring.57.158.128.224.nip.io)
+- [x] ServiceMonitors for dev & prod clusters
+- [x] 5 alert rules configured:
+  - HighErrorRate (5xx > 5%)
+  - HighLatency (p95 > 1500ms)
+  - RefusalRateSpike (> 15%)
+  - PodDown (replicas < 1)
+  - HighMemoryUsage (> 90%)
+- [x] Anonymous viewer access enabled
+- [x] 30-day metric retention
+
+**Security & Compliance**
+- [x] Credential sanitization (no hardcoded secrets in Git)
+- [x] Environment variable management (.env local, GitHub Secrets, K8s Secrets)
+- [x] SECURITY.md documentation
+- [x] Database SSL enforcement
+- [x] API key authentication
+
+**Documentation**
+- [x] README.md deployment guide
+- [x] EXTERNAL_API_GUIDE.md for public testing
+- [x] DATABASE_CONFIG.md authoritative reference
+- [x] OPERATIONS.md production runbook
+- [x] PHASE_P5_SUMMARY.md evaluation report
+- [x] EMBEDDING_MIGRATION.md migration procedures
+- [x] CREDENTIAL_FLOW.md (internal, gitignored)
+
+### 🔄 Optional Enhancements
+
+**Security**
+- [ ] TLS/HTTPS with cert-manager
+- [ ] Custom domain DNS (replace nip.io)
+- [ ] Azure WAF integration
+- [ ] Private endpoints for database
+- [ ] Quarterly credential rotation automation
+
+**Performance**
+- [ ] Hybrid search (semantic + keyword)
+- [ ] Metadata filtering for date-specific queries
+- [ ] Model caching for cold-start reduction
+- [ ] Query result caching
+
+**Features**
+- [ ] Multi-dataset support
+- [ ] Real-time dataset updates (webhook-triggered)
+- [ ] Query history and analytics
+- [ ] Admin dashboard for metrics
+
+**MLOps**
+- [ ] A/B testing framework
+- [ ] Model performance degradation alerts
+- [ ] Automated retraining triggers
+- [ ] Feature store integration
 
 ---
 
