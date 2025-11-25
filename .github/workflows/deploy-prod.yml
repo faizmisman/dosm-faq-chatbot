@@ -111,6 +111,11 @@ jobs:
             --set env.MODEL_VERSION=dosm-rag-$IMAGE_TAG \
             --wait --timeout 8m
 
+      - name: Restart primary deployment to pick up secrets
+        run: |
+          kubectl rollout restart deployment faq-chatbot-dosm-insights-primary -n dosm-prod || true
+          kubectl rollout status deployment faq-chatbot-dosm-insights-primary -n dosm-prod --timeout=5m || true
+
       - name: Smoke test /health
         run: |
           kubectl run curl-pod --image=curlimages/curl:8.7.1 -i --rm --restart=Never --namespace=dosm-prod -- curl -s http://faq-chatbot-dosm-insights:8000/health || true
