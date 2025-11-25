@@ -11,23 +11,23 @@ prometheus:
     # Retain metrics for 30 days
     retention: 30d
     
-    # Storage for metrics
+    # Storage for metrics (reduced)
     storageSpec:
       volumeClaimTemplate:
         spec:
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
-              storage: 20Gi
+              storage: 10Gi
     
-    # Resources (minimal for 8GB node)
+    # Resources (ultra-minimal for constrained node)
     resources:
       requests:
-        cpu: 200m
-        memory: 1Gi
+        cpu: 100m
+        memory: 512Mi
       limits:
-        cpu: 1000m
-        memory: 2Gi
+        cpu: 500m
+        memory: 1Gi
     
     # Additional scrape configs for remote clusters
     additionalScrapeConfigs:
