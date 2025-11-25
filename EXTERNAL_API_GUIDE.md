@@ -4,7 +4,7 @@
 
 **Production API Endpoint**: `http://dosm-faq-prod.57.158.128.224.nip.io`
 
-**API Key**: `<YOUR-PROD-API-KEY>`
+**API Key**: `DosmProdApi2025!`
 
 **Status**: ✅ Live and accessible from anywhere
 
@@ -40,7 +40,7 @@ curl http://dosm-faq-prod.57.158.128.224.nip.io/health
 ```bash
 curl -X POST http://dosm-faq-prod.57.158.128.224.nip.io/predict \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: <YOUR-PROD-API-KEY>" \
+  -H "X-API-Key: DosmProdApi2025!" \
   -d '{"query":"What is the unemployment rate in Malaysia?"}'
 ```
 
@@ -67,19 +67,19 @@ curl -X POST http://dosm-faq-prod.57.158.128.224.nip.io/predict \
 # Employment statistics
 curl -X POST http://dosm-faq-prod.57.158.128.224.nip.io/predict \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: <YOUR-PROD-API-KEY>" \
+  -H "X-API-Key: DosmProdApi2025!" \
   -d '{"query":"employment rate 2024"}'
 
 # Labour force participation
 curl -X POST http://dosm-faq-prod.57.158.128.224.nip.io/predict \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: <YOUR-PROD-API-KEY>" \
+  -H "X-API-Key: DosmProdApi2025!" \
   -d '{"query":"labour force participation rate by state"}'
 
 # Industry employment
 curl -X POST http://dosm-faq-prod.57.158.128.224.nip.io/predict \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: <YOUR-PROD-API-KEY>" \
+  -H "X-API-Key: DosmProdApi2025!" \
   -d '{"query":"which industries have the most jobs?"}'
 ```
 
@@ -183,14 +183,14 @@ All requests require the `X-API-Key` header:
 If you encounter problems:
 
 1. **Check health endpoint**: `curl http://dosm-faq-prod.57.158.128.224.nip.io/health`
-2. **Verify API key**: Ensure `X-API-Key: <YOUR-PROD-API-KEY>` is included
+2. **Verify API key**: Ensure `X-API-Key: DosmProdApi2025!` is included
 3. **Check request format**: Content-Type must be `application/json`
 4. **Report to**: faizmisman@example.com (or create GitHub issue)
 
 ### Common Issues
 
 **Problem**: `{"detail":"Invalid or missing API key"}`  
-**Solution**: Add header `-H "X-API-Key: <YOUR-PROD-API-KEY>"`
+**Solution**: Add header `-H "X-API-Key: DosmProdApi2025!"`
 
 **Problem**: `Connection refused`  
 **Solution**: Check endpoint URL is `http://` not `https://` (SSL not configured)
@@ -207,7 +207,7 @@ If you encounter problems:
 curl -X POST http://57.158.128.224/predict \
   -H "Content-Type: application/json" \
   -H "Host: dosm-faq-prod.57.158.128.224.nip.io" \
-  -H "X-API-Key: <YOUR-PROD-API-KEY>" \
+  -H "X-API-Key: DosmProdApi2025!" \
   -d '{"query":"your question here"}'
 ```
 
@@ -216,7 +216,7 @@ curl -X POST http://57.158.128.224/predict \
 2. **URL**: `http://dosm-faq-prod.57.158.128.224.nip.io/predict`
 3. **Headers**:
    - `Content-Type: application/json`
-   - `X-API-Key: <YOUR-PROD-API-KEY>`
+   - `X-API-Key: DosmProdApi2025!`
 4. **Body** (raw JSON):
    ```json
    {
@@ -231,7 +231,7 @@ import requests
 url = "http://dosm-faq-prod.57.158.128.224.nip.io/predict"
 headers = {
     "Content-Type": "application/json",
-    "X-API-Key": "<YOUR-PROD-API-KEY>"
+    "X-API-Key": "DosmProdApi2025!"
 }
 data = {
     "query": "What is the unemployment rate in Malaysia?"

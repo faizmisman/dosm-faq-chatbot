@@ -62,7 +62,7 @@ kubectl get svc -n ingress-nginx  # External IP: 57.158.128.224
 # 3. Test via public endpoint (no port-forward needed!)
 curl -X POST http://dosm-faq-prod.57.158.128.224.nip.io/predict \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: <YOUR-PROD-API-KEY>" \
+  -H "X-API-Key: DosmProdApi2025!" \
   -d '{"query":"employment statistics 2024"}'
 
 # Health check
@@ -72,12 +72,25 @@ curl http://dosm-faq-prod.57.158.128.224.nip.io/health
 curl -X POST http://57.158.128.224/predict \
   -H "Content-Type: application/json" \
   -H "Host: dosm-faq-prod.57.158.128.224.nip.io" \
-  -H "X-API-Key: <YOUR-PROD-API-KEY>" \
+  -H "X-API-Key: DosmProdApi2025!" \
   -d '{"query":"employment statistics 2024"}'
 
 # Note: Using nip.io for DNS (maps *.57.158.128.224.nip.io → 57.158.128.224)
 # For custom domain, update DNS A record and deploy/helm/values-prod.yaml
 ```
+
+**Production API Key**: `DosmProdApi2025!`
+
+**Postman Testing**:
+1. **URL**: `http://dosm-faq-prod.57.158.128.224.nip.io/predict`
+2. **Method**: `POST`
+3. **Headers**: 
+   - `Content-Type: application/json`
+   - `X-API-Key: DosmProdApi2025!`
+4. **Body** (raw JSON):
+   ```json
+   {"query": "What is the unemployment rate in Malaysia?"}
+   ```
 
 ### Monitor Production (Grafana & Prometheus)
 ```bash
