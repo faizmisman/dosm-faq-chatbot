@@ -99,7 +99,7 @@ jobs:
                       eval \$CMD
                   env:
                     - name: DEV_DATABASE_URL
-                      value: "postgresql://dosm_admin:<URL-ENCODED-PASSWORD>@pg-dosm.postgres.database.azure.com:5432/dosm-faq-chatbot-dev-postgres?sslmode=require"
+                      value: "postgresql://dosm_admin:${{ secrets.URL_ENCODED_PASSWORD }}@pg-dosm.postgres.database.azure.com:5432/dosm-faq-chatbot-dev-postgres?sslmode=require"
                     - name: PROD_DATABASE_URL
                       valueFrom:
                         secretKeyRef:
@@ -166,7 +166,7 @@ jobs:
           POD_NAME=$(kubectl get pods -n dosm-prod -l app=faq-chatbot-dosm-insights -o jsonpath='{.items[0].metadata.name}')
           
           echo "Testing prod API with migrated embeddings..."
-          kubectl exec -n dosm-prod $POD_NAME -- wget -qO- --header="Content-Type: application/json" --header="X-API-Key: <YOUR-PROD-API-KEY>" --post-data='{"query":"What is the unemployment rate?"}' http://localhost:8000/predict | jq .
+          kubectl exec -n dosm-prod $POD_NAME -- wget -qO- --header="Content-Type: application/json" --header="X-API-Key: ${{ secrets.PROD_API_KEY }}" --post-data='{"query":"What is the unemployment rate?"}' http://localhost:8000/predict | jq .
 
       - name: Cleanup old migration jobs
         if: always()

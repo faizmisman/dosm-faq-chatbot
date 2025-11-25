@@ -1,3 +1,10 @@
+# NOTE: This file is for reference/documentation only.
+# For production migrations, use the GitHub Actions workflow:
+# .github/workflows/migrate-embeddings.yml
+# The workflow creates jobs dynamically with credentials from GitHub Secrets.
+#
+# For manual kubectl deployment, you must replace <URL-ENCODED-PASSWORD>
+# with the actual password from your .env file or Kubernetes secret.
 apiVersion: batch/v1
 kind: Job
 metadata:
