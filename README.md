@@ -176,7 +176,7 @@ kubectl rollout restart deployment faq-chatbot-dosm-insights -n dosm-dev
 ### Database Operations
 ```bash
 # Connect to database
-PGPASSWORD='Kusanagi@2105' psql \
+PGPASSWORD=<dbpassword> psql \
   -h pg-dosm.postgres.database.azure.com \
   -U dosm_admin \
   -d dosm-faq-chatbot-prod-postgres
