@@ -5,6 +5,9 @@ image:
 
 replicaCount: 1
 
+strategy:
+  type: Recreate  # Stop old pod before starting new one (saves CPU, no downtime concern in dev)
+
 resources:
   requests:
     cpu: 250m
