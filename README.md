@@ -174,9 +174,3 @@ For detailed troubleshooting, see [development-docs/OPERATIONS.md](development-d
 ## 📞 Support
 
 For technical documentation and operations guide, see [development-docs/](development-docs/)
-
----
-
-## 📄 License
-
-Internal project - Department of Statistics Malaysia (DOSM)
