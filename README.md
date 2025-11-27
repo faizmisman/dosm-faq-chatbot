@@ -14,23 +14,10 @@ curl -X POST http://dosm-faq-prod.57.158.128.224.nip.io/predict \
 ```
 
 **Monitoring Dashboard**: http://monitoring.57.158.128.224.nip.io  
-**Credentials**: `admin` / `DosmInsights2025!`  
-**MLflow**: http://20.6.121.120:5000
+**MLflow**: Available on internal network
 
 ### Development Setup
-```bash
-# 1. Connect to dev cluster
-az aks get-credentials --resource-group dosm-faq-chatbot-dev-rg --name dosm-faq-chatbot-dev-aks
-
-# 2. Port-forward API
-kubectl port-forward svc/faq-chatbot-dosm-insights 8000:80 -n dosm-dev &
-
-# 3. Test locally
-curl -X POST http://localhost:8000/predict \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: dev-api-key" \
-  -d '{"query":"unemployment rate 2023"}'
-```
+For internal development access, see [development-docs/QUICKREF.md](development-docs/QUICKREF.md)
 
 ---
 
@@ -124,100 +111,20 @@ curl -X POST http://localhost:8000/predict \
 
 ---
 
-## 🔧 Common Operations
+## 🔧 Operations
 
-### Deploy to Production
-```bash
-# Trigger via GitHub Actions (recommended)
-# https://github.com/faizmisman/dosm-faq-chatbot/actions/workflows/deploy-prod.yml
-# Click "Run workflow"
-
-# Pipeline automatically:
-# 1. Creates prod-api-key secret from GitHub Secrets (PROD_API_KEY)
-# 2. Patches Flagger-managed secrets
-# 3. Runs Helm upgrade
-# 4. Restarts primary deployment
-# 5. Smoke tests /health endpoint
-```
-
-### Check Deployment Status
-```bash
-# Production
-kubectl get pods -n dosm-prod
-kubectl get canary -n dosm-prod
-kubectl get hpa -n dosm-prod
-
-# Dev
-kubectl get pods -n dosm-dev
-kubectl get cronjob -n dosm-dev
-```
-
-### View Logs
-```bash
-# Production API logs
-kubectl logs -n dosm-prod -l app=faq-chatbot-dosm-insights --tail=50
-
-# ML pipeline logs
-kubectl logs -n dosm-dev -l app=rag-ingest --tail=100
-
-# Canary status
-kubectl describe canary faq-chatbot-dosm-insights -n dosm-prod
-```
-
-### Manual Pod Restart
-```bash
-# Restart production pods (picks up new secrets)
-kubectl rollout restart deployment faq-chatbot-dosm-insights-primary -n dosm-prod
-
-# Restart dev pods
-kubectl rollout restart deployment faq-chatbot-dosm-insights -n dosm-dev
-```
-
-### Database Operations
-```bash
-# Connect to database
-PGPASSWORD=<dbpassword> psql \
-  -h pg-dosm.postgres.database.azure.com \
-  -U dosm_admin \
-  -d dosm-faq-chatbot-prod-postgres
-
-# Check embeddings count
-SELECT COUNT(*), MAX(created_at) FROM embeddings;
-
-# Check database size
-SELECT pg_size_pretty(pg_database_size('dosm-faq-chatbot-prod-postgres'));
-```
+For deployment procedures, troubleshooting, and database operations, see:
+- [DEPLOYMENT_NOTES.md](DEPLOYMENT_NOTES.md) - Deployment workflow
+- [development-docs/OPERATIONS.md](development-docs/OPERATIONS.md) - Production runbook
+- [development-docs/QUICKREF.md](development-docs/QUICKREF.md) - Command reference
 
 ---
 
 ## 🧪 Testing
 
-### Run Evaluation Suite
-```bash
-# Port-forward API
-kubectl port-forward svc/faq-chatbot-dosm-insights 8000:80 -n dosm-dev &
+For API testing instructions, see [EXTERNAL_API_GUIDE.md](EXTERNAL_API_GUIDE.md).
 
-# Run unemployment queries test
-python3 scripts/run_eval_remote.py \
-  http://localhost:8000/predict \
-  dev-api-key \
-  eval/queries_unemployment.jsonl \
-  --out eval/results_test.json
-
-# Expected: ≥85% hit rate, <500ms latency, 0% errors
-```
-
-### Smoke Test
-```bash
-# Production health check
-curl http://dosm-faq-prod.57.158.128.224.nip.io/health
-
-# Test predict endpoint
-curl -X POST http://dosm-faq-prod.57.158.128.224.nip.io/predict \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: DosmProdApi2025!" \
-  -d '{"query":"test query"}'
-```
+For internal evaluation procedures, see [development-docs/EVALUATION.md](development-docs/EVALUATION.md).
 
 ---
 
@@ -242,58 +149,34 @@ Chunk Size:      25 rows (optimized)
 
 ---
 
-## 🔐 Secrets Management
+## 🔐 Security
 
-**GitHub Secrets** (for CI/CD):
-- `PROD_API_KEY`: DosmProdApi2025!
-- `DATABASE_URL_PROD`: PostgreSQL connection string
-- `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`
+- API authentication via X-API-Key header
+- Secrets managed via CI/CD pipeline
+- Database SSL enforcement
+- No hardcoded credentials
 
-**Kubernetes Secrets**:
-- `prod-api-key`: Created by pipeline from GitHub Secrets
-- `prod-db-url`: Database connection string
-- `faq-chatbot-dosm-insights-config-primary`: Flagger-managed (patched by pipeline)
-
-**⚠️ Important**: Never manually edit Kubernetes secrets. Always update GitHub Secrets and trigger pipeline.
-
-See [DEPLOYMENT_NOTES.md](DEPLOYMENT_NOTES.md) for complete workflow.
+For internal deployment details, see [DEPLOYMENT_NOTES.md](DEPLOYMENT_NOTES.md).
 
 ---
 
 ## 🛠️ Troubleshooting
 
-### API Returns 401 Unauthorized
-- Verify API key: `kubectl get secret prod-api-key -n dosm-prod -o jsonpath='{.data.PROD_API_KEY}' | base64 -d`
-- Check pod has correct key: `kubectl exec -n dosm-prod <pod-name> -- printenv API_KEY`
-- Trigger pipeline to patch secrets
+### API Issues
+- Verify correct API key usage (see Quick Start)
+- Check service health: `/health` endpoint
+- Review monitoring dashboard for errors
 
-### Pods Pending (Insufficient CPU)
-- Check node resources: `kubectl describe node`
-- Delete pending pods: `kubectl delete pods -n dosm-prod --field-selector=status.phase==Pending`
-- Scale down non-critical workloads
-
-### Canary Deployment Failed
-- Check canary status: `kubectl describe canary -n dosm-prod`
-- View Flagger logs: `kubectl logs -n flagger-system deployment/flagger`
-- Common cause: Insufficient CPU for canary pods
-
-### Database Connection Issues
-- Verify secret: `kubectl get secret prod-db-url -n dosm-prod -o jsonpath='{.data.DATABASE_URL}' | base64 -d`
-- Test connection: `psql <DATABASE_URL>`
-- Check firewall rules in Azure Portal
+For detailed troubleshooting, see [development-docs/OPERATIONS.md](development-docs/OPERATIONS.md)
 
 ---
 
 ## 📞 Support
 
-For issues or questions:
-1. Check `development-docs/` for detailed documentation
-2. Review logs: `kubectl logs -n <namespace> <pod-name>`
-3. Check monitoring dashboard: http://monitoring.57.158.128.224.nip.io
-4. Review recent deployments: GitHub Actions → workflows
+For technical documentation and operations guide, see [development-docs/](development-docs/)
 
 ---
 
 ## 📄 License
 
-Internal project - DOSM Malaysia
+Internal project - Department of Statistics Malaysia (DOSM)
