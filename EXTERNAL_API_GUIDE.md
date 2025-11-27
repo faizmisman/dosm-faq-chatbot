@@ -4,18 +4,11 @@
 
 **Production API Endpoint**: `http://dosm-faq-prod.57.158.128.224.nip.io`
 
-**API Key**: `DosmProdApi2025!` (stored in GitHub Secrets as `PROD_API_KEY`)
+**API Key**: `DosmProdApi2025!`
 
 **Status**: ✅ Live and accessible from anywhere
 
-**Note**: API key is automatically injected from GitHub Secrets during CI/CD deployment. Flagger manages the canary deployment with `-primary` suffix for stable pods.
-
-**Monitoring Dashboard**: `http://monitoring.57.158.128.224.nip.io`
-- **Username**: `admin`
-- **Password**: `DosmInsights2025!`
-- **Viewer Access**: Anonymous (view-only without login)
-- **Metrics**: RPS, p95 latency, error rate, RAG decisions, memory/CPU
-- **Clusters**: Dev + Prod metrics in single dashboard
+**Monitoring Dashboard**: `http://monitoring.57.158.128.224.nip.io` (view-only access)
 
 ---
 
@@ -141,7 +134,7 @@ All requests require the `X-API-Key` header:
 -H "X-API-Key: <YOUR-PROD-API-KEY>"
 ```
 
-**Note**: This is a test API key. For production use, request a dedicated API key.
+**Note**: This is the production API key for testing purposes.
 
 ---
 
@@ -156,11 +149,9 @@ All requests require the `X-API-Key` header:
 ## Technical Details
 
 ### Infrastructure
-- **Hosting**: Azure Kubernetes Service (AKS)
+- **Hosting**: Cloud-hosted service
 - **Region**: Southeast Asia
-- **Load Balancer**: Azure LB with public IP
-- **Ingress**: NGINX Ingress Controller
-- **DNS**: nip.io wildcard (*.57.158.128.224.nip.io → 57.158.128.224)
+- **High Availability**: Multi-replica deployment
 
 ### Architecture
 - **RAG System**: Retrieval-Augmented Generation
@@ -187,7 +178,6 @@ If you encounter problems:
 1. **Check health endpoint**: `curl http://dosm-faq-prod.57.158.128.224.nip.io/health`
 2. **Verify API key**: Ensure `X-API-Key: DosmProdApi2025!` is included
 3. **Check request format**: Content-Type must be `application/json`
-4. **Report to**: faizmisman@example.com (or create GitHub issue)
 
 ### Common Issues
 
@@ -247,23 +237,12 @@ print(response.json())
 
 ## Changelog
 
-### 2025-01-XX (Latest)
-- ✅ Centralized monitoring deployed (Prometheus + Grafana)
-- ✅ Public monitoring dashboard: http://monitoring.57.158.128.224.nip.io
-- ✅ Credentials: admin / DosmInsights2025!
-- ✅ Anonymous viewer access enabled
-- ✅ Dev + Prod metrics in single dashboard
-- ✅ 5 alert rules configured (error rate, latency, pod health)
-- ✅ ServiceMonitors for both clusters
-- ✅ 30-day metric retention
-- ✅ Horizontal Pod Autoscaler active (2-10 replicas)
-
-### 2025-11-25
-- ✅ Production ingress configured with NGINX
-- ✅ Public LoadBalancer IP: 57.158.128.224
-- ✅ nip.io DNS for easy access
-- ✅ API endpoint live and tested
+### 2025-11 (Latest)
+- ✅ Production API endpoint live
+- ✅ Monitoring dashboard available
+- ✅ High availability deployment (2-10 replicas)
 - ✅ Vector store embeddings loaded
+- ✅ Performance optimized (90% hit rate, <200ms p95 latency)
 
 ---
 
@@ -272,15 +251,6 @@ print(response.json())
 ### For Testers
 1. Test various query types (employment, economic data, clarifications)
 2. Measure response times and accuracy
-3. Monitor real-time metrics in Grafana dashboard
-4. Import custom dashboard: `dashboards/grafana/dosm_insights_dashboard.json`
-5. Report any unexpected behaviors or errors
-6. Try edge cases (very long queries, special characters, etc.)
-
-### For Developers
-1. Custom domain setup (replace nip.io)
-2. SSL/TLS certificate (Let's Encrypt)
-3. Enhanced rate limiting configuration
-4. Private endpoint for database (Azure Private Link)
-5. Automated credential rotation
-6. A/B testing framework for model improvements
+3. Monitor real-time metrics in dashboard
+4. Report any unexpected behaviors or errors
+5. Try edge cases (very long queries, special characters, etc.)

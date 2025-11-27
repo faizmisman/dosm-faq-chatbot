@@ -48,3 +48,7 @@ eval/results*.json
 
 # Vector store artifacts (now stored in PostgreSQL database)
 artifacts/
+
+# Local Kubernetes testing (not for public repo)
+LOCAL_K8S_GUIDE.md
+deploy/helm/values-local.yaml
