@@ -33,10 +33,12 @@ Note: Dev does not require canary. Prod canary via Flagger is unaffected.
 "; ".join([f"{col}={row[col]}" for col in df.columns])
 ```
 
-**Current embeddings** (as of 2025-11-29 00:45 MYT):
-- **Dev**: Re-ingested with improved format using image `7e9ba40` (contains semicolon fix)
-- **Prod**: Re-ingested with improved format using image `7e9ba40` (contains semicolon fix)
-- Verified with `od -c` showing actual bytes contain semicolons and newlines
+**Current embeddings** (as of 2025-11-29 00:28 MYT):
+- **Dev**: 5 embeddings with semicolon format (cleaned and re-ingested using `scripts/reingest_clean.py`)
+- **Prod**: 5 embeddings with semicolon format (migrated from dev using `scripts/migrate_embeddings_dev_to_prod.py`)
+- Verified format: `date=2016-01-01; unemployed=501.5; unemployed_active=361.9; ...`
+
+**Important**: Prod ingestion strategy is to **copy validated embeddings from dev**, not regenerate independently. This ensures consistency and avoids model non-determinism.
 
 **Improved format example:**
 ```
