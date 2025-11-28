@@ -34,18 +34,23 @@ Note: Dev does not require canary. Prod canary via Flagger is unaffected.
 ```
 
 **Current embeddings** (as of 2025-11-29 00:28 MYT):
-- **Dev**: 5 embeddings with semicolon format (cleaned and re-ingested using `scripts/reingest_clean.py`)
+- **Dev**: 5 embeddings with semicolon format (re-ingested using `train/train_rag_assets.py`)
 - **Prod**: 5 embeddings with semicolon format (migrated from dev using `scripts/migrate_embeddings_dev_to_prod.py`)
 - Verified format: `date=2016-01-01; unemployed=501.5; unemployed_active=361.9; ...`
 
 **Ingestion Workflow**:
-1. **Dev ingestion** (manual/on-demand): Run `scripts/reingest_clean.py` or use `train/train_rag_assets.py`
+1. **Dev ingestion** (manual/on-demand): Use `train/train_rag_assets.py` with MLflow tracking
 2. **Prod ingestion** (automated): CronJob `rag-migrate-dev-to-prod` copies from dev daily at 3:30 AM MYT (19:30 UTC)
 
 **Important**: Prod ingestion strategy is to **copy validated embeddings from dev**, not regenerate independently. This ensures consistency and avoids model non-determinism.
 
+### Active Code
+- **Dev ingestion**: `train/train_rag_assets.py` (uses `app/llm_rag/chunking.py` for semicolon format)
+- **Prod migration**: `scripts/migrate_embeddings_dev_to_prod.py`
+- **MLflow tracking**: Logs metrics, parameters, and artifacts for each ingestion run
+
 ### Scheduled Jobs
-- **Old CronJob** (`rag-ingest` in prod): **SUSPENDED** - was using CSV format from `scripts/rag_ingest.py`
+- **Old CronJob** (`rag-ingest` in prod): **SUSPENDED** - was using CSV format
 - **New CronJob** (`rag-migrate-dev-to-prod` in prod): **ACTIVE** - copies from dev using `scripts/migrate_embeddings_dev_to_prod.py`
 - Schedule: Daily at 3:30 AM MYT (19:30 UTC)
 

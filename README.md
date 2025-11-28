@@ -58,18 +58,19 @@ For internal development access, see [development-docs/QUICKREF.md](development-
 
 **Core RAG Pipeline** (Phase P1-P3)
 - Data ingestion from DOSM portal
-- Text chunking (25 rows per chunk)
-- Embedding generation (MiniLM-L6-v2)
+- Text chunking (25 rows per chunk, semicolon-separated format)
+- Embedding generation (MiniLM-L6-v2, 384 dimensions)
 - Vector storage (pgvector/PostgreSQL)
 - HNSW index for fast similarity search
 - FastAPI /predict endpoint
 - Citation extraction & confidence scoring
 
 **ML Pipeline** (Phase P4)
-- Standalone rag_ingest.py script
-- MLflow experiment tracking
-- CronJob daily at 02:00 MYT
-- Automatic model versioning
+- train_rag_assets.py ingestion script
+- MLflow experiment tracking (metrics & parameters)
+- Dev: Manual ingestion on-demand
+- Prod: Daily CronJob migration from dev (3:30 AM MYT)
+- Automatic embedding versioning
 
 **Quality Tuning** (Phase P5)
 - Chunk size optimization (25 rows)

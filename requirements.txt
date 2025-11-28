@@ -18,3 +18,4 @@ langchain-huggingface==0.0.3
 openai>=1.0.0,<2.0.0  # optional LLM provider
 pgvector>=0.2.0,<1.0.0  # PostgreSQL vector extension
 langchain-postgres>=0.0.9  # PostgreSQL vector store for LangChain
+mlflow>=2.9.0,<3.0.0  # Experiment tracking for RAG ingestion
