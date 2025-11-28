@@ -26,22 +26,87 @@ Note: Dev does not require canary. Prod canary via Flagger is unaffected.
 
 ## RAG Embedding Format Improvement
 
-**Status**: Chunking code updated (2025-11-28) to improve embedding format.
+**Status**: ✅ **COMPLETED** (2025-11-29) - Both dev and prod databases now use improved embedding format.
 
 **Change**: `app/llm_rag/chunking.py` now uses semicolon-separated fields:
 ```python
 "; ".join([f"{col}={row[col]}" for col in df.columns])
 ```
 
-**Current embeddings**: Still use old format (space-separated, no newlines between records).
+**Current embeddings** (as of 2025-11-29 00:28 MYT):
+- **Dev**: 5 embeddings with semicolon format (re-ingested using `train/train_rag_assets.py`)
+- **Prod**: 5 embeddings with semicolon format (migrated from dev using `scripts/migrate_embeddings_dev_to_prod.py`)
+- Verified format: `date=2016-01-01; unemployed=501.5; unemployed_active=361.9; ...`
 
-**Next update**: Scheduled RAG ingestion CronJob (daily at 03:00 MYT) or next manual ingestion will automatically use the improved format:
-```
-date=2018-02-01; unemployed=508.5; unemployed_active=349.8; ...
-date=2018-03-01; unemployed=508.7; unemployed_active=349.8; ...
+**Ingestion Workflow**:
+1. **Dev ingestion** (automated): CronJob runs `train/train_rag_assets.py` daily at 3:00 AM MYT with MLflow tracking
+2. **Prod migration** (manual/on-demand): Trigger migration from dev after validation
+
+**Important**: Prod ingestion strategy is to **copy validated embeddings from dev**, not regenerate independently. This ensures consistency and avoids model non-determinism.
+
+### Active Code
+- **Dev ingestion**: `train/train_rag_assets.py` (uses `app/llm_rag/chunking.py` for semicolon format)
+- **Prod migration**: `scripts/migrate_embeddings_dev_to_prod.py`
+- **MLflow tracking**: Logs metrics, parameters, and artifacts for each ingestion run
+
+### Scheduled Jobs
+- **Dev CronJob** (`faq-chatbot-dosm-insights-rag-ingest-cron` in dev): **ACTIVE** - daily ingestion at 3:00 AM MYT
+- **Prod Job** (`rag-migrate-dev-to-prod` in prod): Job template only - apply manually when ready
+
+### Manual Prod Migration
+```bash
+# Apply the Job manifest (creates new job each time)
+kubectl apply -f deploy/k8s/rag-migrate-job.yml
+
+# Monitor migration
+kubectl logs -f job/rag-migrate-dev-to-prod -n dosm-prod
+
+# Cleanup after completion (job auto-deletes after 1 hour)
+kubectl delete job rag-migrate-dev-to-prod -n dosm-prod
+
+# Or run locally
+export DEV_DATABASE_URL=$(kubectl get secret database-secrets -n dosm-dev -o jsonpath='{.data.DATABASE_URL}' | base64 -d)
+export PROD_DATABASE_URL=$(kubectl get secret prod-db-url -n dosm-prod -o jsonpath='{.data.DATABASE_URL}' | base64 -d)
+python3 scripts/migrate_embeddings_dev_to_prod.py --batch-size 100 --skip-confirmation
 ```
 
-**Benefit**: Better semantic understanding for LLM retrieval; clearer field boundaries prevent token confusion.
+### Manual Migration
+```bash
+# Get database URLs
+kubectl config use-context dosm-faq-chatbot-dev-aks
+kubectl get secret database-secrets -n dosm-dev -o jsonpath='{.data.DATABASE_URL}' | base64 -d > /tmp/dev_db_url.txt
+
+kubectl config use-context dosm-faq-chatbot-prod-aks
+kubectl get secret prod-db-url -n dosm-prod -o jsonpath='{.data.DATABASE_URL}' | base64 -d > /tmp/prod_db_url.txt
+
+# Run migration
+export DEV_DATABASE_URL=$(cat /tmp/dev_db_url.txt)
+export PROD_DATABASE_URL=$(cat /tmp/prod_db_url.txt)
+python3 scripts/migrate_embeddings_dev_to_prod.py --batch-size 100 --skip-confirmation
+```
+
+**Improved format example:**
+```
+date=2016-01-01; unemployed=501.5; unemployed_active=361.9; unemployed_active_3mo=180.3; unemployed_active_6mo=110.0; unemployed_active_12mo=36.0; unemployed_active_long=35.6; unemployed_inactive=139.7
+date=2016-02-01; unemployed=506.4; unemployed_active=254.0; unemployed_active_3mo=115.8; unemployed_active_6mo=83.7; unemployed_active_12mo=34.9; unemployed_active_long=19.6; unemployed_inactive=252.4
+```
+
+**Benefit**: Better semantic understanding for LLM retrieval; clearer field boundaries prevent token confusion like `unemployed_inactive=191.9date=2020-02-01`.
+
+**Verification**: Use `od -c` to view actual byte content including separators and newlines:
+```bash
+# Dev database
+kubectl config use-context dosm-faq-chatbot-dev-aks
+kubectl get secret database-secrets -n dosm-dev -o jsonpath='{.data.DATABASE_URL}' | base64 -d > /tmp/dev_db_url.txt
+psql "$(cat /tmp/dev_db_url.txt)" -c "SELECT content FROM embeddings WHERE id='chunk_0_25' LIMIT 1;" -A -t | od -c | head -40
+
+# Prod database
+kubectl config use-context dosm-faq-chatbot-prod-aks
+kubectl get secret prod-db-url -n dosm-prod -o jsonpath='{.data.DATABASE_URL}' | base64 -d > /tmp/prod_db_url.txt
+psql "$(cat /tmp/prod_db_url.txt)" -c "SELECT content FROM embeddings WHERE id='chunk_0_25' LIMIT 1;" -A -t | od -c | head -40
+```
+
+**Note**: Some SQL clients may display multi-line content as a single line, collapsing newlines. This is a display issue only - the actual database content is correct with semicolons and newlines.
 
 ## Production API Key Management
 
