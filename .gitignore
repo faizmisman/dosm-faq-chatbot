@@ -53,3 +53,4 @@ artifacts/
 LOCAL_K8S_GUIDE.md
 Makefile.local
 deploy/helm/values-local.yaml
+scripts/quick_reingest.py

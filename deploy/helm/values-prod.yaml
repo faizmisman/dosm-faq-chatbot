@@ -78,7 +78,7 @@ ragIngest:
 
 # Scheduled RAG ingestion (CronJob) configuration
 ragIngestCron:
-  enabled: false  # Disabled in prod - use Airflow DAG instead
+  enabled: false  # Disabled in prod - use rag-migrate-dev-to-prod CronJob instead
   schedule: "0 3 * * *"
   image:
     repository: dosmfaqchatbotacr1lw5a.azurecr.io/dosm-faq-chatbot

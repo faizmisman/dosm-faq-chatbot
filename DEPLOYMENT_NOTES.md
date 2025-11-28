@@ -38,7 +38,31 @@ Note: Dev does not require canary. Prod canary via Flagger is unaffected.
 - **Prod**: 5 embeddings with semicolon format (migrated from dev using `scripts/migrate_embeddings_dev_to_prod.py`)
 - Verified format: `date=2016-01-01; unemployed=501.5; unemployed_active=361.9; ...`
 
+**Ingestion Workflow**:
+1. **Dev ingestion** (manual/on-demand): Run `scripts/reingest_clean.py` or use `train/train_rag_assets.py`
+2. **Prod ingestion** (automated): CronJob `rag-migrate-dev-to-prod` copies from dev daily at 3:30 AM MYT (19:30 UTC)
+
 **Important**: Prod ingestion strategy is to **copy validated embeddings from dev**, not regenerate independently. This ensures consistency and avoids model non-determinism.
+
+### Scheduled Jobs
+- **Old CronJob** (`rag-ingest` in prod): **SUSPENDED** - was using CSV format from `scripts/rag_ingest.py`
+- **New CronJob** (`rag-migrate-dev-to-prod` in prod): **ACTIVE** - copies from dev using `scripts/migrate_embeddings_dev_to_prod.py`
+- Schedule: Daily at 3:30 AM MYT (19:30 UTC)
+
+### Manual Migration
+```bash
+# Get database URLs
+kubectl config use-context dosm-faq-chatbot-dev-aks
+kubectl get secret database-secrets -n dosm-dev -o jsonpath='{.data.DATABASE_URL}' | base64 -d > /tmp/dev_db_url.txt
+
+kubectl config use-context dosm-faq-chatbot-prod-aks
+kubectl get secret prod-db-url -n dosm-prod -o jsonpath='{.data.DATABASE_URL}' | base64 -d > /tmp/prod_db_url.txt
+
+# Run migration
+export DEV_DATABASE_URL=$(cat /tmp/dev_db_url.txt)
+export PROD_DATABASE_URL=$(cat /tmp/prod_db_url.txt)
+python3 scripts/migrate_embeddings_dev_to_prod.py --batch-size 100 --skip-confirmation
+```
 
 **Improved format example:**
 ```
