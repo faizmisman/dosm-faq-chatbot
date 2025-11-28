@@ -12,8 +12,9 @@ def build_chunks(df: pd.DataFrame, chunk_size: int = 25) -> List[Dict[str, Any]]
 		slice_df = df.iloc[start:end]
 		text_parts = []
 		for idx, row in slice_df.iterrows():
-			text_parts.append(" ".join([f"{col}={row[col]}" for col in df.columns]))
-		content = "\n".join(text_parts)
+			# Add semicolon separator between fields and newline between records
+			text_parts.append("; ".join([f"{col}={row[col]}" for col in df.columns]))
+		content = "\n".join(text_parts)  # Newline between records
 		chunks.append({
 			"id": f"chunk_{start}_{end}",
 			"content": content,

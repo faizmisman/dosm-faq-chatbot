@@ -24,6 +24,25 @@ kubectl autoscale deployment faq-chatbot-dosm-insights -n dosm-dev --min=1 --max
 
 Note: Dev does not require canary. Prod canary via Flagger is unaffected.
 
+## RAG Embedding Format Improvement
+
+**Status**: Chunking code updated (2025-11-28) to improve embedding format.
+
+**Change**: `app/llm_rag/chunking.py` now uses semicolon-separated fields:
+```python
+"; ".join([f"{col}={row[col]}" for col in df.columns])
+```
+
+**Current embeddings**: Still use old format (space-separated, no newlines between records).
+
+**Next update**: Scheduled RAG ingestion CronJob (daily at 03:00 MYT) or next manual ingestion will automatically use the improved format:
+```
+date=2018-02-01; unemployed=508.5; unemployed_active=349.8; ...
+date=2018-03-01; unemployed=508.7; unemployed_active=349.8; ...
+```
+
+**Benefit**: Better semantic understanding for LLM retrieval; clearer field boundaries prevent token confusion.
+
 ## Production API Key Management
 
 ### GitHub Secrets
