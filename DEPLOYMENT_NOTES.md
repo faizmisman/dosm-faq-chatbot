@@ -26,22 +26,29 @@ Note: Dev does not require canary. Prod canary via Flagger is unaffected.
 
 ## RAG Embedding Format Improvement
 
-**Status**: Chunking code updated (2025-11-28) to improve embedding format.
+**Status**: Chunking code updated (commit `128047a`, 2025-11-28) to improve embedding format.
 
 **Change**: `app/llm_rag/chunking.py` now uses semicolon-separated fields:
 ```python
 "; ".join([f"{col}={row[col]}" for col in df.columns])
 ```
 
-**Current embeddings**: Still use old format (space-separated, no newlines between records).
+**Current embeddings** (as of 2025-11-28 23:30 MYT):
+- Dev & Prod: Re-ingested with old format (space-separated) using image `8ef46c3`
+- Image `8ef46c3` predates the chunking fix
 
-**Next update**: Scheduled RAG ingestion CronJob (daily at 03:00 MYT) or next manual ingestion will automatically use the improved format:
+**Next update**: 
+- Scheduled RAG ingestion CronJob (daily at 03:00 MYT) will use improved format once new deployment occurs
+- Or trigger manual re-ingestion after next successful CI build
+- CI currently has disk space issues (GitHub Actions runner); retry build or deploy manually when resolved
+
+**Improved format example:**
 ```
 date=2018-02-01; unemployed=508.5; unemployed_active=349.8; ...
 date=2018-03-01; unemployed=508.7; unemployed_active=349.8; ...
 ```
 
-**Benefit**: Better semantic understanding for LLM retrieval; clearer field boundaries prevent token confusion.
+**Benefit**: Better semantic understanding for LLM retrieval; clearer field boundaries prevent token confusion like `unemployed_inactive=191.9date=2020-02-01`.
 
 ## Production API Key Management
 
