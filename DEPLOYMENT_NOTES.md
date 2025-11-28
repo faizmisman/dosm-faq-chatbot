@@ -1,5 +1,29 @@
 # Deployment Notes
 
+## Dev Rollout Stability
+
+To avoid Helm upgrade timeouts in dev due to CPU pressure and HPA enforcing extra replicas, keep dev simple:
+
+- Use `Recreate` strategy and `replicaCount: 1` (already in `deploy/helm/values-dev.yaml`).
+- Before upgrading, delete HPA and scale to one replica; use longer Helm timeout.
+
+Commands:
+
+```sh
+kubectl delete hpa faq-chatbot-dosm-insights -n dosm-dev || true
+kubectl scale deployment faq-chatbot-dosm-insights -n dosm-dev --replicas=1
+helm upgrade --install faq-chatbot-dosm-insights deploy/helm -n dosm-dev -f deploy/helm/values-dev.yaml --timeout 10m --atomic=false
+kubectl rollout status deployment faq-chatbot-dosm-insights -n dosm-dev --timeout=10m
+```
+
+Optional: re-create HPA conservatively after rollout:
+
+```sh
+kubectl autoscale deployment faq-chatbot-dosm-insights -n dosm-dev --min=1 --max=2 --cpu-percent=75
+```
+
+Note: Dev does not require canary. Prod canary via Flagger is unaffected.
+
 ## Production API Key Management
 
 ### GitHub Secrets
