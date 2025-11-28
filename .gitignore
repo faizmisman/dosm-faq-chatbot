@@ -51,4 +51,5 @@ artifacts/
 
 # Local Kubernetes testing (not for public repo)
 LOCAL_K8S_GUIDE.md
+Makefile.local
 deploy/helm/values-local.yaml

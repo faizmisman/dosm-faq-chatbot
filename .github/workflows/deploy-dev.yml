@@ -65,6 +65,12 @@ jobs:
             --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
             --namespace dosm-dev \
             --dry-run=client -o yaml | kubectl apply -f -
+      - name: Pre-upgrade stabilization (dev)
+        run: |
+          # Delete HPA and scale to 1 replica to prevent CPU contention and Pending pods
+          kubectl delete hpa faq-chatbot-dosm-insights -n dosm-dev --ignore-not-found=true
+          kubectl scale deployment faq-chatbot-dosm-insights -n dosm-dev --replicas=1 --timeout=2m || true
+          echo "Dev stabilized: HPA removed, scaled to 1 replica"
       - name: Helm upgrade (dev)
         run: |
           IMAGE_TAG=${{ steps.meta.outputs.IMAGE_TAG }}
@@ -74,7 +80,11 @@ jobs:
             --set image.repository=${{ secrets.ACR_NAME }}.azurecr.io/dosm-faq-chatbot \
             --set image.tag=$IMAGE_TAG \
             --set env.MODEL_VERSION=dosm-rag-$IMAGE_TAG \
-            --wait --timeout 10m
+            --wait --timeout 10m --atomic=false
+      - name: Verify rollout (dev)
+        run: |
+          kubectl rollout status deployment faq-chatbot-dosm-insights -n dosm-dev --timeout=10m
+          kubectl get pods -n dosm-dev -l app.kubernetes.io/name=faq-chatbot-dosm-insights
       - name: Smoke test /health
         run: |
           kubectl run curl-pod --image=curlimages/curl:8.7.1 -i --rm --restart=Never --namespace=dosm-dev -- curl -s http://faq-chatbot-dosm-insights:8000/health || true
