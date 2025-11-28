@@ -68,8 +68,8 @@ For internal development access, see [development-docs/QUICKREF.md](development-
 **ML Pipeline** (Phase P4)
 - train_rag_assets.py ingestion script
 - MLflow experiment tracking (metrics & parameters)
-- Dev: Manual ingestion on-demand
-- Prod: Daily CronJob migration from dev (3:30 AM MYT)
+- Dev: Automated daily ingestion (3:00 AM MYT)
+- Prod: Manual migration from validated dev embeddings
 - Automatic embedding versioning
 
 **Quality Tuning** (Phase P5)

@@ -39,8 +39,8 @@ Note: Dev does not require canary. Prod canary via Flagger is unaffected.
 - Verified format: `date=2016-01-01; unemployed=501.5; unemployed_active=361.9; ...`
 
 **Ingestion Workflow**:
-1. **Dev ingestion** (manual/on-demand): Use `train/train_rag_assets.py` with MLflow tracking
-2. **Prod ingestion** (automated): CronJob `rag-migrate-dev-to-prod` copies from dev daily at 3:30 AM MYT (19:30 UTC)
+1. **Dev ingestion** (automated): CronJob runs `train/train_rag_assets.py` daily at 3:00 AM MYT with MLflow tracking
+2. **Prod migration** (manual/on-demand): Trigger migration from dev after validation
 
 **Important**: Prod ingestion strategy is to **copy validated embeddings from dev**, not regenerate independently. This ensures consistency and avoids model non-determinism.
 
@@ -50,9 +50,25 @@ Note: Dev does not require canary. Prod canary via Flagger is unaffected.
 - **MLflow tracking**: Logs metrics, parameters, and artifacts for each ingestion run
 
 ### Scheduled Jobs
-- **Old CronJob** (`rag-ingest` in prod): **SUSPENDED** - was using CSV format
-- **New CronJob** (`rag-migrate-dev-to-prod` in prod): **ACTIVE** - copies from dev using `scripts/migrate_embeddings_dev_to_prod.py`
-- Schedule: Daily at 3:30 AM MYT (19:30 UTC)
+- **Dev CronJob** (`faq-chatbot-dosm-insights-rag-ingest-cron` in dev): **ACTIVE** - daily ingestion at 3:00 AM MYT
+- **Prod Job** (`rag-migrate-dev-to-prod` in prod): Job template only - apply manually when ready
+
+### Manual Prod Migration
+```bash
+# Apply the Job manifest (creates new job each time)
+kubectl apply -f deploy/k8s/rag-migrate-job.yml
+
+# Monitor migration
+kubectl logs -f job/rag-migrate-dev-to-prod -n dosm-prod
+
+# Cleanup after completion (job auto-deletes after 1 hour)
+kubectl delete job rag-migrate-dev-to-prod -n dosm-prod
+
+# Or run locally
+export DEV_DATABASE_URL=$(kubectl get secret database-secrets -n dosm-dev -o jsonpath='{.data.DATABASE_URL}' | base64 -d)
+export PROD_DATABASE_URL=$(kubectl get secret prod-db-url -n dosm-prod -o jsonpath='{.data.DATABASE_URL}' | base64 -d)
+python3 scripts/migrate_embeddings_dev_to_prod.py --batch-size 100 --skip-confirmation
+```
 
 ### Manual Migration
 ```bash

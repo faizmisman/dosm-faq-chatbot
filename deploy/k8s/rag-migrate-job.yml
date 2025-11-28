@@ -1,0 +1,54 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rag-migrate-dev-to-prod
+  namespace: dosm-prod
+spec:
+  # Manual job template for migrating embeddings from dev to prod
+  # Usage: kubectl apply -f deploy/k8s/rag-migrate-job.yml
+  ttlSecondsAfterFinished: 3600  # Clean up 1 hour after completion
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: rag-migrate
+    spec:
+      restartPolicy: OnFailure
+      imagePullSecrets:
+        - name: acr-pull
+      containers:
+        - name: migrate
+          image: dosmfaqchatbotacr1lw5a.azurecr.io/dosm-faq-chatbot:latest
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - |
+              set -e
+              echo "[info] Starting embedding migration from dev to prod"
+              echo "[info] Source: dev database"
+              echo "[info] Target: prod database"
+              python3 scripts/migrate_embeddings_dev_to_prod.py \
+                --source-url "$DEV_DATABASE_URL" \
+                --target-url "$PROD_DATABASE_URL" \
+                --batch-size 100 \
+                --skip-confirmation
+              echo "[done] Migration complete"
+          env:
+            - name: DEV_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: dev-db-url
+                  key: DATABASE_URL
+            - name: PROD_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: prod-db-url
+                  key: DATABASE_URL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
