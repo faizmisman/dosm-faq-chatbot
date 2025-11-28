@@ -26,29 +26,40 @@ Note: Dev does not require canary. Prod canary via Flagger is unaffected.
 
 ## RAG Embedding Format Improvement
 
-**Status**: Chunking code updated (commit `128047a`, 2025-11-28) to improve embedding format.
+**Status**: ✅ **COMPLETED** (2025-11-29) - Both dev and prod databases now use improved embedding format.
 
 **Change**: `app/llm_rag/chunking.py` now uses semicolon-separated fields:
 ```python
 "; ".join([f"{col}={row[col]}" for col in df.columns])
 ```
 
-**Current embeddings** (as of 2025-11-28 23:30 MYT):
-- Dev & Prod: Re-ingested with old format (space-separated) using image `8ef46c3`
-- Image `8ef46c3` predates the chunking fix
-
-**Next update**: 
-- Scheduled RAG ingestion CronJob (daily at 03:00 MYT) will use improved format once new deployment occurs
-- Or trigger manual re-ingestion after next successful CI build
-- CI currently has disk space issues (GitHub Actions runner); retry build or deploy manually when resolved
+**Current embeddings** (as of 2025-11-29 00:45 MYT):
+- **Dev**: Re-ingested with improved format using image `7e9ba40` (contains semicolon fix)
+- **Prod**: Re-ingested with improved format using image `7e9ba40` (contains semicolon fix)
+- Verified with `od -c` showing actual bytes contain semicolons and newlines
 
 **Improved format example:**
 ```
-date=2018-02-01; unemployed=508.5; unemployed_active=349.8; ...
-date=2018-03-01; unemployed=508.7; unemployed_active=349.8; ...
+date=2016-01-01; unemployed=501.5; unemployed_active=361.9; unemployed_active_3mo=180.3; unemployed_active_6mo=110.0; unemployed_active_12mo=36.0; unemployed_active_long=35.6; unemployed_inactive=139.7
+date=2016-02-01; unemployed=506.4; unemployed_active=254.0; unemployed_active_3mo=115.8; unemployed_active_6mo=83.7; unemployed_active_12mo=34.9; unemployed_active_long=19.6; unemployed_inactive=252.4
 ```
 
 **Benefit**: Better semantic understanding for LLM retrieval; clearer field boundaries prevent token confusion like `unemployed_inactive=191.9date=2020-02-01`.
+
+**Verification**: Use `od -c` to view actual byte content including separators and newlines:
+```bash
+# Dev database
+kubectl config use-context dosm-faq-chatbot-dev-aks
+kubectl get secret database-secrets -n dosm-dev -o jsonpath='{.data.DATABASE_URL}' | base64 -d > /tmp/dev_db_url.txt
+psql "$(cat /tmp/dev_db_url.txt)" -c "SELECT content FROM embeddings WHERE id='chunk_0_25' LIMIT 1;" -A -t | od -c | head -40
+
+# Prod database
+kubectl config use-context dosm-faq-chatbot-prod-aks
+kubectl get secret prod-db-url -n dosm-prod -o jsonpath='{.data.DATABASE_URL}' | base64 -d > /tmp/prod_db_url.txt
+psql "$(cat /tmp/prod_db_url.txt)" -c "SELECT content FROM embeddings WHERE id='chunk_0_25' LIMIT 1;" -A -t | od -c | head -40
+```
+
+**Note**: Some SQL clients may display multi-line content as a single line, collapsing newlines. This is a display issue only - the actual database content is correct with semicolons and newlines.
 
 ## Production API Key Management
 
