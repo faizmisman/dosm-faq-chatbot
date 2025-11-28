@@ -1,0 +1,84 @@
+image:
+  repository: dosm-faq-chatbot
+  tag: local
+  pullPolicy: Never  # Use local images, don't pull from registry
+  pullSecretName: ""  # No pull secret needed for local images
+
+replicaCount: 1
+
+strategy:
+  type: Recreate  # Stop old pod before starting new one (saves resources in local Docker)
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+env:
+  LOG_LEVEL: DEBUG
+  MODEL_VERSION: "dosm-rag-local"
+  CONF_THRESHOLD: "0.25"
+  RAG_TOP_K: "3"
+  EMBEDDING_MODEL_NAME: "sentence-transformers/all-MiniLM-L6-v2"
+  API_KEY_SECRET: local-api-key
+  API_KEY_KEY: API_KEY
+  DB:
+    URL_SECRET: local-db-url
+    URL_KEY: DATABASE_URL
+
+nameOverride: "faq-chatbot-dosm-insights"
+fullnameOverride: "faq-chatbot-dosm-insights"
+
+keyVaultCSI:
+  enabled: false
+
+prometheus:
+  scrape: false  # Disable Prometheus for local testing
+
+secrets:
+  enabled: true
+  apiKey: ""  # Will be created from .env via Makefile
+  databaseUrl: ""  # Will be created from .env via Makefile
+
+ingress:
+  enabled: false  # Use port-forward or NodePort for local access
+
+service:
+  type: NodePort  # Use NodePort for easy local access
+  port: 80
+  targetPort: 8000
+  nodePort: 30080  # Access via localhost:30080
+
+# RAG ingestion Job configuration (for local testing)
+ragIngest:
+  enabled: false
+  image:
+    repository: dosm-faq-chatbot
+    tag: local
+    pullPolicy: Never
+  model: "sentence-transformers/all-MiniLM-L6-v2"
+  chunkSize: 25
+  dataset:
+    inline: |
+      year,indicator,value,notes
+      2022,CPI,118.4,Consumer Price Index base 2015=100
+      2023,CPI,121.0,Moderate inflation increase
+      2023,UnemploymentRate,3.5,Percentage of labor force unemployed
+      2024,CPI,123.2,Projected CPI early estimate
+      2024,UnemploymentRate,3.4,Slight improvement year over year
+    fileName: dataset.csv
+    pvcName: ""
+    mountPath: /ingest
+  backoffLimit: 1
+  restartPolicy: Never
+
+# Disable CronJob for local testing
+ragIngestCron:
+  enabled: false
+
+# No canary for local
+canary:
+  enabled: false

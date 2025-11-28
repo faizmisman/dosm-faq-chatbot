@@ -1,0 +1,92 @@
+# Local Kubernetes Testing Makefile
+# This file contains commands for local Docker Desktop Kubernetes deployment
+# NOT for production use - local testing only
+
+.PHONY: help build setup secrets deploy logs status restart clean smoke
+
+help:
+	@echo "Local Kubernetes Testing Commands:"
+	@echo "  make -f Makefile.local deploy    - Full deployment (build + setup + deploy)"
+	@echo "  make -f Makefile.local build     - Build Docker image locally"
+	@echo "  make -f Makefile.local setup     - Create namespace and switch context"
+	@echo "  make -f Makefile.local secrets   - Create secrets from .env"
+	@echo "  make -f Makefile.local logs      - Follow pod logs"
+	@echo "  make -f Makefile.local status    - Show deployment status"
+	@echo "  make -f Makefile.local restart   - Restart pods"
+	@echo "  make -f Makefile.local clean     - Stop and remove all local resources"
+	@echo "  make -f Makefile.local smoke     - Quick API test"
+
+# Build Docker image for local Kubernetes (no remote push)
+build:
+	@echo "Building image for local Kubernetes testing..."
+	docker build -t dosm-faq-chatbot:local .
+	@echo "✅ Image built: dosm-faq-chatbot:local (local only, not pushed)"
+
+# Setup local Kubernetes environment
+setup:
+	@echo "Setting up local Kubernetes environment..."
+	@echo "⚠️  Switching to docker-desktop context (local only)"
+	kubectl config use-context docker-desktop
+	kubectl create namespace dosm-local --dry-run=client -o yaml | kubectl apply -f -
+	@echo "✅ Namespace 'dosm-local' ready (local testing only)"
+
+# Create secrets from .env file
+secrets:
+	@echo "Creating local secrets from .env file..."
+	@if [ ! -f .env ]; then \
+		echo "❌ Error: .env file not found!"; \
+		exit 1; \
+	fi
+	@eval $$(grep -E '^(API_KEY|DATABASE_URL)=' .env | sed 's/ *= */=/g') && \
+	kubectl create secret generic local-api-key \
+		--from-literal=API_KEY="$$API_KEY" \
+		-n dosm-local --dry-run=client -o yaml | kubectl apply -f - && \
+	echo "✅ API key secret created from .env (API_KEY)" && \
+	kubectl create secret generic local-db-url \
+		--from-literal=DATABASE_URL="$$DATABASE_URL" \
+		-n dosm-local --dry-run=client -o yaml | kubectl apply -f - && \
+	echo "✅ Database secret created from .env (DATABASE_URL)"
+
+# Full deployment: build, setup, and deploy
+deploy: build setup secrets
+	@echo "Deploying to local Kubernetes (docker-desktop only)..."
+	@echo "⚠️  Using local image (dosm-faq-chatbot:local) - no remote registry access"
+	helm upgrade --install faq-chatbot-local ./deploy/helm \
+		-f ./deploy/helm/values-local.yaml \
+		-n dosm-local \
+		--create-namespace
+	@echo "✅ Deployed to LOCAL cluster! Access at http://localhost:30080"
+	@eval $$(grep '^API_KEY=' .env | sed 's/ *= */=/g') && \
+	echo "Test with: curl -X POST http://localhost:30080/predict -H 'Content-Type: application/json' -H 'X-API-Key: $$API_KEY' -d '{\"query\":\"test\"}'"
+
+# View logs
+logs:
+	kubectl logs -n dosm-local -l app=faq-chatbot-dosm-insights --tail=50 -f
+
+# Show deployment status
+status:
+	@echo "=== Pods ==="
+	kubectl get pods -n dosm-local
+	@echo "\n=== Services ==="
+	kubectl get svc -n dosm-local
+	@echo "\n=== Access URL ==="
+	@echo "http://localhost:30080"
+
+# Stop and remove all local resources
+clean:
+	helm uninstall faq-chatbot-local -n dosm-local || true
+	kubectl delete namespace dosm-local || true
+	@echo "✅ Local resources cleaned up"
+
+# Restart deployment
+restart:
+	kubectl rollout restart deployment faq-chatbot-dosm-insights -n dosm-local
+	kubectl rollout status deployment faq-chatbot-dosm-insights -n dosm-local
+
+# Quick smoke test
+smoke:
+	@API_KEY=$$(grep "^API_KEY" .env | head -1 | cut -d'=' -f2 | tr -d ' "'); \
+	curl -X POST http://localhost:30080/predict \
+		-H "Content-Type: application/json" \
+		-H "X-API-Key: $$API_KEY" \
+		-d '{"query":"What is the unemployment rate?"}' | jq .
