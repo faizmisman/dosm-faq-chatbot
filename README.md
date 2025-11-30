@@ -18,6 +18,13 @@ See `development-docs/OPERATIONS_OVERVIEW.md` for:
 Grafana dashboard JSON: `dashboards/grafana/dosm_insights_dashboard.json`.
 Capture a screenshot from the prod Grafana at `http://monitoring.57.158.128.224.nip.io` and commit under `dashboards/grafana/screenshot.png`.
 
+## What's New (2025-11-30)
+
+- Ingress: Enabled NGINX rate limiting and tuned proxy timeouts.
+- Database: Added and applied `requests_log` table migration in Dev and Prod.
+- Dev cluster: Removed legacy `rag-ingest` CronJob; kept Helm-managed `faq-chatbot-dosm-insights-rag-ingest-cron` to prevent Pending pods from CPU contention.
+- Docs: Production runbook and operations overview updated with current workflows and runbooks.
+
 > Production-ready RAG chatbot for DOSM economic data queries  
 > **Performance**: 90% hit rate | 197ms p95 latency | 0% error rate
 
@@ -45,10 +52,11 @@ For internal development access, see [development-docs/QUICKREF.md](development-
 - **[DEPLOYMENT_NOTES.md](DEPLOYMENT_NOTES.md)** - API key management and deployment workflow
 - **[development-docs/](development-docs/)** - Complete technical documentation
   - `QUICKREF.md` - Commands and connection strings
-  - `OPERATIONS.md` - Production runbook
+  - `OPERATIONS_OVERVIEW.md` - Operations runbook (training, CI/CD, K8s, Grafana, canary)
   - `EVALUATION.md` - Testing and metrics
   - `ARCHITECTURE.md` - System design
   - `PHASE_P5_SUMMARY.md` - Phase 5 results
+  - `dosm_insights_prod_runbook_architecture_v_0-2.md` - Production runbook & architecture report
 
 ---
 
@@ -134,7 +142,7 @@ For internal development access, see [development-docs/QUICKREF.md](development-
 
 For deployment procedures, troubleshooting, and database operations, see:
 - [DEPLOYMENT_NOTES.md](DEPLOYMENT_NOTES.md) - Deployment workflow
-- [development-docs/OPERATIONS.md](development-docs/OPERATIONS.md) - Production runbook
+- [development-docs/OPERATIONS_OVERVIEW.md](development-docs/OPERATIONS_OVERVIEW.md) - Operations runbook
 - [development-docs/QUICKREF.md](development-docs/QUICKREF.md) - Command reference
 
 ---
