@@ -1,4 +1,22 @@
 # DOSM FAQ Chatbot
+## CI/CD Status
+
+- Dev Deploy: ![CI & Deploy (Dev)](https://github.com/faizmisman/dosm-faq-chatbot/actions/workflows/deploy-dev.yml/badge.svg)
+- Prod Deploy: ![CI & Deploy (Prod)](https://github.com/faizmisman/dosm-faq-chatbot/actions/workflows/deploy-prod.yml/badge.svg)
+- CI: ![CI](https://github.com/faizmisman/dosm-faq-chatbot/actions/workflows/ci.yml/badge.svg)
+- Terraform: ![Terraform Infra](https://github.com/faizmisman/dosm-faq-chatbot/actions/workflows/terraform.yml/badge.svg)
+
+## Operations Overview
+
+See `development-docs/OPERATIONS_OVERVIEW.md` for:
+- Training/ingestion with MLflow
+- GitHub Actions workflows
+- Kubernetes deployment + rollout commands
+- Grafana dashboard usage
+- Canary/blue-green and rollback
+
+Grafana dashboard JSON: `dashboards/grafana/dosm_insights_dashboard.json`.
+Capture a screenshot from the prod Grafana at `http://monitoring.57.158.128.224.nip.io` and commit under `dashboards/grafana/screenshot.png`.
 
 > Production-ready RAG chatbot for DOSM economic data queries  
 > **Performance**: 90% hit rate | 197ms p95 latency | 0% error rate
